@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe To Share - CoachHub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@100;200;300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Anuphan', sans-serif;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .fade-in-section {
+            transition: opacity 1000ms ease-out, transform 1000ms ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // Optimized Icon Wrapper for Browser
+        const Icon = ({ name, size = 24, className = "", strokeWidth = 2, fill = "none" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    window.lucide.createIcons({ 
+                        icons: { [name]: window.lucide.icons[name] },
+                        attrs: { "stroke-width": strokeWidth, "fill": fill }
+                    });
+                }
+            }, [name]);
+            const lucideName = name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+            const finalName = lucideName === "heart-pulse" ? "activity" : lucideName;
+            return (
+                <span className="inline-flex items-center justify-center" style={{ width: size, height: size }}>
+                    <i ref={iconRef} 
+                       data-lucide={finalName} 
+                       className={className} 
+                       style={{ width: size, height: size }}></i>
+                </span>
+            );
+        };
+
+
+
+        // Lucide Component Mappings
+        const HeartHandshake = (p) => <Icon name="HeartHandshake" {...p} />;
+        const ShieldCheck = (p) => <Icon name="ShieldCheck" {...p} />;
+        const Lock = (p) => <Icon name="Lock" {...p} />;
+        const ChevronRight = (p) => <Icon name="ChevronRight" {...p} />;
+        const UserCheck = (p) => <Icon name="UserCheck" {...p} />;
+        const QrCode = (p) => <Icon name="QrCode" {...p} />;
+        const CalendarClock = (p) => <Icon name="CalendarClock" {...p} />;
+        const MessageCircle = (p) => <Icon name="MessageCircle" {...p} />;
+        const Target = (p) => <Icon name="Target" {...p} />;
+        const Users = (p) => <Icon name="Users" {...p} />;
+        const ChevronDown = (p) => <Icon name="ChevronDown" {...p} />;
+        const X = (p) => <Icon name="X" {...p} />;
+        const CheckCircle2 = (p) => <Icon name="CheckCircle2" {...p} />;
+        const Globe = (p) => <Icon name="Globe" {...p} />;
+        const Sprout = (p) => <Icon name="Sprout" {...p} />;
+        const HeartPulse = (p) => <Icon name="HeartPulse" {...p} />;
+        const CloudLightning = (p) => <Icon name="CloudLightning" {...p} />;
+        const Sun = (p) => <Icon name="Sun" {...p} />;
+        const Rocket = (p) => <Icon name="Rocket" {...p} />;
+        const Battery = (p) => <Icon name="Battery" {...p} />;
+        const BrainCircuit = (p) => <Icon name="BrainCircuit" {...p} />;
+        const Sparkles = (p) => <Icon name="Sparkles" {...p} />;
+        const Heart = (p) => <Icon name="Heart" {...p} />;
+        const ArrowUp = (p) => <Icon name="ArrowUp" {...p} />;
+        const Bot = (p) => <Icon name="Bot" {...p} />;
+        const Send = (p) => <Icon name="Send" {...p} />;
+        const Trash2 = (p) => <Icon name="Trash2" {...p} />;
+        const AlertCircle = (p) => <Icon name="AlertCircle" {...p} />;
+        const Mail = (p) => <Icon name="Mail" {...p} />;
+        const CalendarDays = (p) => <Icon name="CalendarDays" {...p} />;
+        const Clock = (p) => <Icon name="Clock" {...p} />;
+        const ArrowLeft = (p) => <Icon name="ArrowLeft" {...p} />;
+
+        const FadeInSection = ({ children, delay = 0, className = "" }) => {
+            const [isVisible, setVisible] = useState(false);
+            const domRef = useRef();
+            useEffect(() => {
+                const observer = new IntersectionObserver(entries => {
+                    entries.forEach(entry => { if (entry.isIntersecting) setVisible(true); });
+                }, { threshold: 0.05 });
+                if (domRef.current) observer.observe(domRef.current);
+                return () => observer.disconnect();
+            }, []);
+            return (
+                <div ref={domRef} className={`fade-in-section ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+                    {children}
+                </div>
+            );
+        };
+
+        // --- START OF APP LOGIC ---
+
+// --- TRANSLATIONS & DATA ---
+const t = {
+  th: {
+    nav: { about: 'เกี่ยวกับเรา', compare: 'เช็กก่อนปรึกษา', ai: 'ให้ AI ช่วยเลือก', steps: 'ขั้นตอน', coaches: 'ทีมโค้ช', faq: 'คำถามที่พบบ่อย', register: 'เลือกลงทะเบียน' },
+    hero: {
+      subtitle: 'CoachHub Internal Program',
+      title: 'ปลอดภัยที่จะเล่า',
+      desc1: 'พื้นที่พูดคุยแบบส่วนตัวกับโค้ชภายในองค์กรของเรา',
+      desc2: 'ที่พร้อมรับฟังอย่างเข้าใจ และช่วยให้คุณ',
+      highlight: '"ชัดขึ้น เบาขึ้น และก้าวต่อได้"',
+      btn: 'ทำความรู้จักโค้ชทั้ง 5 ท่าน'
+    },
+    about: {
+      title: 'SAFE TO SHARE คืออะไร?',
+      desc: 'โครงการนี้คือพื้นที่ปลอดภัยสำหรับพนักงานทุกคน ที่ตั้งใจสร้างขึ้นมาเพื่อให้คุณได้แวะมาพัก ทบทวนเรื่องราวต่างๆ อย่างสบายใจ โดยมีโค้ชคอยรับฟังและช่วยให้คุณมองเห็นทางเลือกเพื่อก้าวต่อไปอย่างมั่นใจ',
+      val1: { title: 'CONFIDENTIAL', desc: 'ข้อมูลทุกอย่างจะถูกเก็บเป็นความลับ และเราเคารพความเป็นส่วนตัวของคุณเสมอ' },
+      val2: { title: 'NO JUDGMENT', desc: 'พื้นที่แห่งการรับฟังด้วยความเข้าใจ เปิดกว้าง และปราศจากการตัดสิน' },
+      val3: { title: 'FORWARD TOGETHER', desc: 'ชวนคิดเพื่อมองปัญหาให้ชัดขึ้น และพร้อมก้าวต่อไปในแบบของคุณ' }
+    },
+    compare: {
+      badge: 'SAFE TO SHARE',
+      title1: 'มีเรื่องหนักใจ หมดไฟ',
+      title2: 'หรืออยากไปต่อ... คุยกับใครดี?',
+      subtitle1: 'ไม่ต้องเก็บไว้คนเดียว! มาเช็กดูว่าตอนนี้คุณควรปรึกษา',
+      subtitle2: 'เพื่อหาคนรับฟังที่ใช่ เคลียร์ใจให้โล่ง และพร้อมก้าวต่อ',
+      coachBtn: 'ไลฟ์โค้ช',
+      or: 'หรือ',
+      psychBtn: 'นักจิตวิทยา',
+      coach: {
+        title: 'ไลฟ์โค้ช',
+        subtitle: '(Life Coach)',
+        quote: '"ดึงศักยภาพในปัจจุบัน เพื่อมุ่งสู่เป้าหมายที่ต้องการในอนาคต"',
+        items: [
+          'สำหรับผู้ที่สภาวะจิตใจปกติ แต่อยากพัฒนาตัวเอง หาเป้าหมาย หรือรู้สึกติดขัดบางเรื่อง',
+          'เน้นการตั้งเป้าหมาย (Goal-setting) และสร้างแผนการลงมือทำ (Action Plan)',
+          'ใช้คำถามกระตุ้นความคิด ให้ผู้รับบริการได้ค้นพบคำตอบและศักยภาพด้วยตัวเอง'
+        ]
+      },
+      psych: {
+        title: 'นักจิตวิทยา',
+        subtitle: '(Psychologist / Therapist)',
+        quote: '"เยียวยาจิตใจและจัดการความรู้สึกที่หนักอึ้ง เพื่อคืนความสมดุลให้คุณกลับมายิ้มได้อีกครั้ง"',
+        items: [
+          'สำหรับผู้ที่มีความเครียดสะสม ซึมเศร้า วิตกกังวล หรือมีปัญหาที่กระทบการใช้ชีวิตประจำวัน',
+          'เน้นค้นหาต้นตอของปัญหา ทำความเข้าใจ และจัดการอารมณ์ที่ซับซ้อน',
+          'ใช้ทฤษฎีทางคลินิก บำบัดโดยผู้เชี่ยวชาญที่มีใบประกอบวิชาชีพ'
+        ]
+      },
+      step1: {
+        badge: 'STEP 1: DECISION MATRIX',
+        title: 'สรุปชัดๆ ตอนนี้คุณอยู่ "โซนไหน?"',
+        desc: 'แกนตั้งคือ "ระดับความเครียด" แกนนอนคือ "เป้าหมายอนาคต" ลองเอาเมาส์ชี้ที่แต่ละกล่องเพื่อดูว่าคุณควรปรึกษาใคร',
+        yAxisTop: 'เครียดหนัก',
+        yAxisLabel: 'STRESS LEVEL',
+        yAxisBottom: 'สบายดี',
+        xAxisLeft: 'จัดการเรื่องในอดีต',
+        xAxisLabel: 'FUTURE GOAL',
+        xAxisRight: 'พุ่งเป้าสู่อนาคต',
+        q1: { title: 'โซนเยียวยา', desc: 'เครียดสะสม ทรมานใจ\nกระทบการใช้ชีวิต' },
+        q2: { title: 'โซนสับสน', desc: 'อยากก้าวหน้ามาก\nแต่เครียดจัดจน Burnout' },
+        q3: { title: 'โซนพักพิง', desc: 'ไม่ได้เครียดอะไร\nแค่เบื่อและหมดไฟชั่วคราว' },
+        q4: { title: 'โซนเติบโต', desc: 'จิตใจแข็งแรงดี\nอยากปลดล็อกศักยภาพ' },
+        recPsych: 'แนะนำ: นักจิตวิทยา',
+        recCoach: 'แนะนำ: ไลฟ์โค้ช'
+      },
+      step2: {
+        badge: 'STEP 2: FOCUS COMPARISON',
+        title: 'เวลา 1 ชั่วโมง... พวกเขาทำอะไรบ้าง?',
+        desc: 'ชี้เมาส์ที่แต่ละหัวข้อเพื่อดูพลังโฟกัสที่แตกต่างกันอย่างชัดเจนของทั้ง 2 วิชาชีพ',
+        bar1: 'สำรวจอดีตและเยียวยาปมในใจ',
+        bar2: 'ตั้งเป้าหมายและวางแผนอนาคต',
+        bar3: 'ผลักดันให้ลงมือทำ (Action-Oriented)',
+        psychLabel: 'นักจิตฯ',
+        coachLabel: 'ไลฟ์โค้ช'
+      }
+    },
+    ai: {
+      badge: 'AI ASSESSMENT',
+      title: 'พื้นที่รับฟัง... คุณอยากระบายเรื่องอะไร?',
+      desc: 'พื้นที่พูดคุยแบบส่วนตัวกับผู้ช่วย AI ที่พร้อมรับฟังและช่วยให้คุณ "ชัดขึ้น เบาขึ้น และรู้ว่าควรก้าวต่อไปกับผู้เชี่ยวชาญท่านไหน"',
+      placeholder: 'พิมพ์เล่าเรื่องราว ความกังวล หรือเป้าหมายของคุณที่นี่... (เช่น ช่วงนี้งานหนักจนร้องไห้บ่อย หรือ อยากพัฒนาตัวเองให้มั่นใจขึ้น)',
+      submit: 'ส่งข้อความให้ AI ช่วยประเมิน',
+      clear: 'ล้างข้อความ',
+      analyzing: 'กำลังประมวลผลข้อความของคุณ...',
+      zone1Desc: 'ขอบคุณที่กล้าแบ่งปันและไว้ใจเล่าให้ฟังนะครับ ฟังดูเป็นช่วงเวลาที่หนักอึ้งและทรมานใจมากเลย ประเมินเบื้องต้นคุณกำลังอยู่ใน **"โซนเยียวยา"** สิ่งที่สำคัญที่สุดตอนนี้คือการดูแลใจให้กลับมาแข็งแรง AI แนะนำให้พบ **"นักจิตวิทยา (Psychologist)"** เป็นอันดับแรก เพื่อให้คุณมีพื้นที่ปลอดภัยในการเยียวยาจิตใจและจัดการความรู้สึกโดยผู้เชี่ยวชาญครับ',
+      zone2Desc: 'ขอบคุณที่เล่าให้ฟังนะครับ ตอนนี้คุณน่าจะกำลังแบกความกดดันไว้เยอะจนรู้สึกเหนื่อยล้าไปหมด ประเมินเบื้องต้นคุณอยู่ใน **"โซนสับสน"** (หรือภาวะ Burnout) AI แนะนำให้พูดคุยกับ **"ไลฟ์โค้ช (Life Coach)"** เพื่อช่วยรับฟัง คลี่คลายความสับสน และร่วมกันหาทางจัดการความเครียดให้คุณกลับมามีพลังอีกครั้งครับ',
+      zone3Desc: 'ขอบคุณที่แวะมาเล่าให้ฟังนะครับ อาการเนือยๆ หรือหมดไฟชั่วคราวเป็นเรื่องที่เกิดขึ้นได้กับทุกคนเลย ประเมินเบื้องต้นคุณอยู่ใน **"โซนพักพิง"** AI แนะนำให้ลองคุยกับ **"ไลฟ์โค้ช (Life Coach)"** เพื่อทบทวนตัวเอง ค้นหาแรงบันดาลใจใหม่ๆ และจุดประกายให้คุณกลับมามีชีวิตชีวาในการทำงานอีกครั้งครับ',
+      zone4Desc: 'ยอดเยี่ยมไปเลยครับ! ฟังจากสิ่งที่คุณเล่า ประเมินเบื้องต้นคุณกำลังอยู่ใน **"โซนเติบโต"** ที่จิตใจแข็งแรงและพร้อมจะก้าวไปข้างหน้า AI แนะนำให้จับคู่กับ **"ไลฟ์โค้ช (Life Coach)"** เพื่อช่วยดึงศักยภาพ วางแผนเป้าหมายให้ชัดเจน และลงมือทำให้สำเร็จตามที่ตั้งใจไว้ครับ',
+      defaultDesc: 'ขอบคุณที่แบ่งปันเรื่องราวให้ฟังนะครับ จากสิ่งที่คุณเล่ามา ประเมินเบื้องต้นคุณอาจกำลังค้นหาทิศทางหรือความชัดเจนบางอย่าง AI แนะนำให้ลองคุยกับ **"ไลฟ์โค้ช (Life Coach)"** เพื่อช่วยจัดระเบียบความคิดครับ แต่หากความรู้สึกนี้เริ่มกระทบการใช้ชีวิตประจำวัน การพบ **"นักจิตวิทยา"** ก็เป็นทางเลือกที่ดีมากเช่นกันครับ',
+      disclaimer: 'หมายเหตุ: ข้อความนี้เป็นเพียงการประเมินเบื้องต้นจากคำหลัก (Keywords) เพื่อช่วยเป็นแนวทางเท่านั้น ไม่ใช่การวินิจฉัยทางการแพทย์ หากคุณรู้สึกไม่ไหว สามารถเลือกลงทะเบียนกับผู้เชี่ยวชาญด้านล่างที่คุณรู้สึก "สบายใจ" ได้ทันทีครับ'
+    },
+    steps: {
+      title: 'ขั้นตอนง่ายๆ',
+      subtitle: 'เริ่มต้นพูดคุยกับเราได้ใน 3 ขั้นตอน',
+      step1: { title: 'เลือกโค้ชที่ใช่', desc: 'เลือกโค้ช 1 ใน 5 ท่านที่คุณรู้สึกสบายใจที่จะคุยด้วย' },
+      step2: { title: 'ลงทะเบียน', desc: 'กรอกข้อมูลสั้นๆ ใช้เวลาไม่ถึง 1 นาที' },
+      step3: { title: 'รอการติดต่อกลับ', desc: 'ทีมงานจะประสานงานและติดต่อนัดหมายเวลาที่สะดวก' }
+    },
+    topicsTitle: 'วันนี้คุณอยากคุยเรื่องไหน?',
+    topicsSubtitle: 'ลองเลือกหัวข้อที่ใกล้เคียงกับสิ่งที่คุณกำลังคิดอยู่ เพื่อค้นหาโค้ชที่เหมาะสม',
+    filterAll: 'ดูโค้ชทั้งหมด',
+    note: 'หมายเหตุ: คุณสามารถเลือกโค้ชจากความรู้สึกสบายใจได้เลย ไม่จำเป็นต้องเป็น "ปัญหาใหญ่" ก็สามารถแวะมาพูดคุยกันได้ครับ/ค่ะ',
+    coachCard: {
+      strengths: 'จุดแข็งการโค้ช',
+      btn: 'เลือกลงทะเบียนกับ',
+      empty: 'ไม่พบข้อมูลโค้ชในหมวดหมู่นี้ กรุณาเลือกหมวดหมู่ใหม่'
+    },
+    faqTitle: 'FAQs',
+    faqSubtitle: 'คำถามที่พบบ่อย',
+    confidential: {
+      title: '100% Strictly Confidential',
+      desc: 'ทุกเรื่องราวที่คุณพูดคุยกับโค้ช จะถูกเก็บรักษาเป็นความลับขั้นสูงสุด เพื่อให้คุณสบายใจที่จะระบายและเล่าทุกเรื่องอย่างปลอดภัย'
+    },
+    footer: {
+      desc: 'พื้นที่พูดคุยแบบส่วนตัวกับโค้ชภายในองค์กร ที่พร้อมรับฟังและช่วยให้คุณ ชัดขึ้น เบาขึ้น และก้าวต่อได้'
+    },
+    modal: {
+      successTitle: 'ส่งอีเมลนัดหมายสำเร็จ!',
+      successDesc1: 'ระบบได้บันทึกข้อมูลและส่งอีเมลแจ้งไปยัง',
+      successDesc2: 'โค้ช',
+      successDesc3: ' เรียบร้อยแล้ว โค้ชจะรอพบคุณในวันที่:',
+      closeBtn: 'ปิดหน้าต่าง',
+      title: 'นัดหมายการโค้ช',
+      desc: 'กรอกข้อมูลและเลือกเวลาที่คุณสะดวก ข้อมูลจะถูกส่งตรงถึงอีเมลโค้ชทันที',
+      labelCoach: 'โค้ชที่ต้องการพูดคุย',
+      unselected: 'ยังไม่ได้ระบุ',
+      labelName: 'ชื่อ-นามสกุล / ชื่อเล่น (ที่สะดวกให้เรียก)',
+      placeName: 'ระบุชื่อของคุณ',
+      labelContact: 'อีเมล หรือ เบอร์โทรศัพท์สำหรับติดต่อกลับ',
+      placeContact: 'ระบุช่องทางติดต่อ',
+      nextBtn: 'ถัดไป: เลือกวันและเวลา',
+      backBtn: 'ย้อนกลับ',
+      submitBtn: 'ยืนยันและส่งอีเมลแจ้งโค้ช',
+      privacyNote: 'ข้อมูลของคุณจะถูกรักษาเป็นความลับสูงสุด',
+      step1: 'ข้อมูลส่วนตัว',
+      step2: 'ตารางเวลาที่ว่าง',
+      selectDate: '1. เลือกวันที่คุณสะดวก',
+      selectTime: '2. เลือกช่วงเวลา',
+      noTimeSlots: 'ไม่มีคิวว่างในวันนี้ กรุณาเลือกวันอื่น',
+      sendingEmail: 'กำลังบันทึกข้อมูลและส่งอีเมล...',
+      timePrefix: 'เวลา '
+    }
+  },
+  en: {
+    nav: { about: 'About Us', compare: 'Coach vs Psych', ai: 'AI Assist', steps: 'How it Works', coaches: 'Our Coaches', faq: 'FAQ', register: 'Register Now' },
+    hero: {
+      subtitle: 'CoachHub Internal Program',
+      title: 'Safe to Share',
+      desc1: 'A private and secure space to talk with our internal coaches.',
+      desc2: 'We are here to listen with empathy and help you',
+      highlight: '"Find clarity, feel lighter, and move forward."',
+      btn: 'Meet our 5 coaches'
+    },
+    about: {
+      title: 'What is SAFE TO SHARE?',
+      desc: 'This program offers a safe psychological space for all employees. It is designed for you to pause, reflect on what matters, and feel completely at ease. Our coaches are here to listen and guide you toward your next steps with confidence.',
+      val1: { title: 'CONFIDENTIAL', desc: 'Your sessions are 100% confidential. We respect your privacy.' },
+      val2: { title: 'NO JUDGMENT', desc: 'An open space for deep listening, with complete empathy and zero judgment.' },
+      val3: { title: 'FORWARD TOGETHER', desc: 'Helping you see things clearly and move forward in your own way.' }
+    },
+    compare: {
+      badge: 'SAFE TO SHARE',
+      title1: 'Feeling heavy, burnt out,',
+      title2: 'or wanting to move forward... Who to talk to?',
+      subtitle1: "Don't keep it to yourself! Let's check whether you should consult a",
+      subtitle2: 'to find the right listener, clear your mind, and be ready to move forward.',
+      coachBtn: 'Life Coach',
+      or: 'or',
+      psychBtn: 'Psychologist',
+      coach: {
+        title: 'Life Coach',
+        subtitle: '(Life Coach)',
+        quote: '"Draws out current potential to aim for desired future goals."',
+        items: [
+          'For those with a normal mental state wanting to develop, find goals, or feeling stuck.',
+          'Focuses on goal-setting and creating actionable plans.',
+          'Uses thought-provoking questions to help clients discover answers and potential.'
+        ]
+      },
+      psych: {
+        title: 'Psychologist',
+        subtitle: '(Therapist)',
+        quote: '"Heals the mind and manages heavy feelings to restore balance so you can smile again."',
+        items: [
+          'For those with chronic stress, depression, anxiety, or issues affecting daily life.',
+          'Focuses on finding the root cause, understanding, and managing complex emotions.',
+          'Uses clinical theories and therapies provided by licensed professionals.'
+        ]
+      },
+      step1: {
+        badge: 'STEP 1: DECISION MATRIX',
+        title: 'Clearly: Which "Zone" are you in?',
+        desc: 'Vertical axis is "Stress Level", horizontal is "Future Goal". Hover over each box to see who you should consult.',
+        yAxisTop: 'High Stress',
+        yAxisLabel: 'STRESS LEVEL',
+        yAxisBottom: 'Fine',
+        xAxisLeft: 'Deal with Past',
+        xAxisLabel: 'FUTURE GOAL',
+        xAxisRight: 'Aim for Future',
+        q1: { title: 'Healing Zone', desc: 'Chronic stress, distress\naffecting daily life' },
+        q2: { title: 'Confused Zone', desc: 'Want progress badly\nbut stressed to burnout' },
+        q3: { title: 'Resting Zone', desc: 'Not stressed, just\ntemporarily bored' },
+        q4: { title: 'Growth Zone', desc: 'Mentally strong\nwant to unlock potential' },
+        recPsych: 'Recommend: Psychologist',
+        recCoach: 'Recommend: Life Coach'
+      },
+      step2: {
+        badge: 'STEP 2: FOCUS COMPARISON',
+        title: 'In 1 hour... what do they do?',
+        desc: 'Hover over each section to see the distinctly different focus power of both professions.',
+        bar1: 'Explore past and heal emotional knots',
+        bar2: 'Set goals and plan for the future',
+        bar3: 'Drive action (Action-Oriented)',
+        psychLabel: 'Psych',
+        coachLabel: 'Coach'
+      }
+    },
+    ai: {
+      badge: 'AI ASSESSMENT',
+      title: 'Safe Space... What would you like to share?',
+      desc: 'A private space to talk with an AI assistant that listens and helps you find clarity, feel lighter, and know who to consult next.',
+      placeholder: 'Share your stories, worries, or goals here... (e.g. Work is too heavy lately making me cry, or I want to build my confidence)',
+      submit: 'Send to AI for Assessment',
+      clear: 'Clear Text',
+      analyzing: 'Analyzing your message...',
+      zone1Desc: 'Thank you for trusting me with this. It sounds like you are going through a very painful and heavy time. Based on your words, you are currently in the **"Healing Zone"**. The most important thing right now is your mental well-being. AI highly recommends seeing a **"Psychologist"** first, so you can have a safe, professional space to heal.',
+      zone2Desc: 'Thank you for sharing. You seem to be carrying a lot of pressure and feeling exhausted. You are likely in the **"Confused Zone"** or experiencing burnout. AI recommends talking to a **"Life Coach"** to help clear the confusion, manage your stress, and help you regain your energy.',
+      zone3Desc: 'Thank you for dropping by. Feeling unmotivated or temporarily burnt out is completely normal. You seem to be in the **"Resting Zone"**. AI recommends chatting with a **"Life Coach"** to reflect on yourself, find new inspiration, and spark joy in your daily life again.',
+      zone4Desc: 'That sounds amazing! Hearing your energy, you are definitely in the **"Growth Zone"**, ready to learn and move forward. AI highly recommends pairing up with a **"Life Coach"** to unlock your potential, set clear goals, and build an action plan to achieve them.',
+      defaultDesc: 'Thank you for sharing your story. It sounds like you are looking for clarity and direction. AI recommends trying a session with a **"Life Coach"** to help organize your thoughts. However, if this is heavily impacting your daily life, seeing a **"Psychologist"** is also a highly recommended option.',
+      disclaimer: 'Note: This assessment is an initial analysis based on keywords to guide your understanding. It is not a medical diagnosis. Please scroll down to register with the professional you feel most comfortable with.'
+    },
+    steps: {
+      title: 'Simple Steps',
+      subtitle: 'Start your coaching journey in 3 easy steps',
+      step1: { title: 'Choose your coach', desc: 'Select one of our 5 coaches you feel most comfortable with.' },
+      step2: { title: 'Register', desc: 'Fill out a quick form in under a minute.' },
+      step3: { title: 'We will contact you', desc: 'Our team will reach out to arrange a convenient time.' }
+    },
+    topicsTitle: 'What would you like to talk about today?',
+    topicsSubtitle: 'Select a topic that closely matches what is on your mind to find the right coach.',
+    filterAll: 'View all coaches',
+    note: 'Note: You can choose a coach simply based on who you feel comfortable with. You don\'t need a "big problem" to reach out for a chat.',
+    coachCard: {
+      strengths: 'Coaching Strengths',
+      btn: 'Register with',
+      empty: 'No coaches found in this category. Please select another.'
+    },
+    faqTitle: 'FAQs',
+    faqSubtitle: 'Frequently Asked Questions',
+    confidential: {
+      title: '100% Strictly Confidential',
+      desc: 'Every story you share with a coach will be kept strictly confidential. We want you to feel completely safe and comfortable opening up.'
+    },
+    footer: {
+      desc: 'A private space to talk with our internal coaches, ready to listen and help you find clarity, feel lighter, and move forward.'
+    },
+    modal: {
+      successTitle: 'Appointment Sent!',
+      successDesc1: 'We have saved your details and sent an email to',
+      successDesc2: 'Coach',
+      successDesc3: ' successfully. The coach is looking forward to seeing you on:',
+      closeBtn: 'Close Window',
+      title: 'Book a Session',
+      desc: 'Fill out your details and select a time. Information will be sent directly to the coach\'s email.',
+      labelCoach: 'Selected Coach',
+      unselected: 'Not selected',
+      labelName: 'Full Name / Nickname (Preferred name)',
+      placeName: 'Enter your name',
+      labelContact: 'Email or Phone Number',
+      placeContact: 'Enter contact details',
+      nextBtn: 'Next: Select Date & Time',
+      backBtn: 'Back',
+      submitBtn: 'Confirm & Email Coach',
+      privacyNote: 'Your information will be kept strictly confidential.',
+      step1: 'Personal Info',
+      step2: 'Available Schedule',
+      selectDate: '1. Select a convenient date',
+      selectTime: '2. Select a time slot',
+      noTimeSlots: 'No available slots on this date. Please select another.',
+      sendingEmail: 'Saving data and sending email...',
+      timePrefix: 'Time: '
+    }
+  },
+  zh: {
+    nav: { about: '关于我们', compare: '咨询对比', ai: 'AI 助手', steps: '预约步骤', coaches: '教练团队', faq: '常见问题', register: '立即预约' },
+    hero: {
+      subtitle: 'CoachHub 内部项目',
+      title: '安心倾诉',
+      desc1: '与内部教练的一对一私密沟通空间。',
+      desc2: '我们随时准备倾听并帮助您',
+      highlight: '"看得更清，感觉更轻松，并继续前行"',
+      btn: '认识我们的 5 位教练'
+    },
+    about: {
+      title: 'SAFE TO SHARE 是什么？',
+      desc: '该项目为全体员工提供一个心理安全的空间，让您能安心停下来，反思重要的事情。我们的教练会倾听并引导您充满信心地迈出下一步。',
+      val1: { title: '绝对保密', desc: '您的所有对话内容都将被绝对保密。我们尊重您的隐私。' },
+      val2: { title: '不带偏见', desc: '这是一个充满同理心、不带任何偏见的深度倾听空间。' },
+      val3: { title: '携手前行', desc: '帮助您看清问题，并以您自己的方式继续前行。' }
+    },
+    compare: {
+      badge: 'SAFE TO SHARE',
+      title1: '感到心累、职业倦怠，',
+      title2: '或者想继续前进...该找谁聊聊？',
+      subtitle1: '别再独自承受！来看看您现在应该咨询',
+      subtitle2: '寻找合适的倾听者，清理思绪，准备好继续前行。',
+      coachBtn: '人生教练',
+      or: '或',
+      psychBtn: '心理咨询师',
+      coach: {
+        title: '人生教练',
+        subtitle: '(Life Coach)',
+        quote: '"挖掘当下的潜力，迈向未来的目标"',
+        items: [
+          '适合心理状态正常，但想自我提升、寻找目标或感到停滞不前的人',
+          '侧重于设定目标 (Goal-setting) 和制定行动计划 (Action Plan)',
+          '通过启发性提问，引导客户自行发现答案和潜能'
+        ]
+      },
+      psych: {
+        title: '心理咨询师',
+        subtitle: '(Psychologist / Therapist)',
+        quote: '"疗愈心灵，处理沉重的情绪，让您重新找回平衡和笑容"',
+        items: [
+          '适合有慢性压力、抑郁、焦虑或问题已影响日常生活的人',
+          '侧重于寻找问题的根源、理解并处理复杂的情绪',
+          '由持有执照的专业人员运用临床理论进行治疗'
+        ]
+      },
+      step1: {
+        badge: 'STEP 1: 决策矩阵',
+        title: '清晰明了：您现在处于哪个“区域”？',
+        desc: '纵轴是“压力水平”，横轴是“未来目标”。将鼠标悬停在每个框上以查看建议咨询对象。',
+        yAxisTop: '高压',
+        yAxisLabel: '压力水平',
+        yAxisBottom: '舒适',
+        xAxisLeft: '处理过去',
+        xAxisLabel: '未来目标',
+        xAxisRight: '迈向未来',
+        q1: { title: '疗愈区', desc: '慢性压力、痛苦\n已影响日常生活' },
+        q2: { title: '迷茫区', desc: '渴望进步\n但压力大到职业倦怠' },
+        q3: { title: '休息区', desc: '没有压力\n只是暂时的无聊和疲倦' },
+        q4: { title: '成长区', desc: '心理强大\n希望解锁更多潜能' },
+        recPsych: '建议: 心理咨询师',
+        recCoach: '建议: 人生教练'
+      },
+      step2: {
+        badge: 'STEP 2: 关注点对比',
+        title: '在1小时内... 他们会做什么？',
+        desc: '将鼠标悬停在各个条目上，查看这两种职业在关注点上的显著差异。',
+        bar1: '探索过去，疗愈情感创伤',
+        bar2: '设定目标，规划未来',
+        bar3: '推动采取行动 (行动导向)',
+        psychLabel: '咨询师',
+        coachLabel: '教练'
+      }
+    },
+    ai: {
+      badge: 'AI 评估',
+      title: '安全空间... 您想倾诉什么？',
+      desc: '这是一个与 AI 助手私密交流的空间，它会倾听并帮助您找到清晰的方向，让您感觉更轻松，并知道下一步该向谁寻求帮助。',
+      placeholder: '在此输入您的故事、担忧或目标... (例如：最近工作太重让我经常哭泣，或者我想提升自信心)',
+      submit: '发送给 AI 评估',
+      clear: '清空文本',
+      analyzing: '正在分析您的信息...',
+      zone1Desc: '谢谢您信任并告诉我这些。听起来您现在承受着非常沉重的痛苦和负担。初步评估，您目前处于 **“疗愈区”**。现在最重要的是照顾好您的心理健康。AI 强烈建议您首先咨询 **“心理咨询师 (Psychologist)”**，以便在专业人士的帮助下获得安全的疗愈空间。',
+      zone2Desc: '感谢您的分享。您似乎承受了很大的压力，感到非常疲惫。您可能处于 **“迷茫区”** 或正在经历职业倦怠。AI 建议您与 **“人生教练 (Life Coach)”** 交流，帮助您理清思绪、管理压力，并重新找回动力。',
+      zone3Desc: '感谢您来这里倾诉。感到暂时的无聊或缺乏动力是非常正常的。您目前处于 **“休息区”**。AI 建议您与 **“人生教练 (Life Coach)”** 聊聊，帮助您反思自我、寻找新的灵感，并重新激发热情。',
+      zone4Desc: '太棒了！从您的文字中感受到了满满的能量，您目前正处于 **“成长区”**，准备好迈步向前。AI 强烈建议您与 **“人生教练 (Life Coach)”** 合作，帮助您解锁潜能、明确目标，并制定出色的行动计划。',
+      defaultDesc: '感谢您分享您的故事。根据您的描述，您可能正在寻找清晰的方向。AI 建议您尝试与 **“人生教练 (Life Coach)”** 沟通以理清思路。然而，如果您觉得问题已严重影响了日常生活，咨询 **“心理咨询师”** 也是一个很好的选择。',
+      disclaimer: '注：此评估仅基于关键词进行初步分析，以提供指导建议，并非医学诊断。您可以向下滚动查看，并与您觉得最“舒服”的专家进行预约。'
+    },
+    steps: {
+      title: '简单几步',
+      subtitle: '只需 3 步即可开启您的辅导之旅',
+      step1: { title: '选择您的教练', desc: '从 5 位教练中选择一位让您感到舒适进行咨询。' },
+      step2: { title: '立即预约', desc: '填写简短的预约表单，不到一分钟即可完成。' },
+      step3: { title: '等待联系', desc: '我们的团队将与您联系，安排合适的时间。' }
+    },
+    topicsTitle: '今天您想聊些什么？',
+    topicsSubtitle: '选择一个贴近您当前想法的话题，寻找合适的教练。',
+    filterAll: '查看所有教练',
+    note: '注：您可以纯粹凭感觉选择让您感到舒适的教练。您不需要有“巨大的困扰”才能来聊天。',
+    coachCard: {
+      strengths: '教练优势',
+      btn: '预约',
+      empty: '在此类别中未找到教练。请选择其他类别。'
+    },
+    faqTitle: 'FAQs',
+    faqSubtitle: '常见问题',
+    confidential: {
+      title: '100% 绝对保密',
+      desc: '您与教练分享的每一个故事都将被严格保密。我们希望您能完全安全、放心地敞开心扉。'
+    },
+    footer: {
+      desc: '与内部教练的一对一私密沟通空间，我们随时准备倾听，帮助您理清思路，轻松前行。'
+    },
+    modal: {
+      successTitle: '预约邮件已发送！',
+      successDesc1: '我们已保存您的信息并向',
+      successDesc2: '教练',
+      successDesc3: ' 发送了邮件。教练期待在以下时间与您会面：',
+      closeBtn: '关闭窗口',
+      title: '预约辅导',
+      desc: '填写您的详细信息并选择时间。信息将直接发送至教练的邮箱。',
+      labelCoach: '已选教练',
+      unselected: '未选择',
+      labelName: '全名 / 昵称 (首选称呼)',
+      placeName: '请输入您的名字',
+      labelContact: '电子邮箱 或 电话号码',
+      placeContact: '请输入联系方式',
+      nextBtn: '下一步：选择日期和时间',
+      backBtn: '返回',
+      submitBtn: '确认并发送邮件给教练',
+      privacyNote: '您的信息将被绝对保密。',
+      step1: '个人信息',
+      step2: '空闲时间表',
+      selectDate: '1. 选择合适的日期',
+      selectTime: '2. 选择时间段',
+      noTimeSlots: '该日期没有空闲时间段。请选择其他日期。',
+      sendingEmail: '正在保存数据并发送邮件...',
+      timePrefix: '时间：'
+    }
+  }
+};
+
+const topicsData = [
+  { id: 'stress', icon: <MessageCircle size={24} />, th: { label: 'ความเครียด/งานหนัก', desc: 'รู้สึกล้า หนักใจ หรือ Burnout' }, en: { label: 'Stress & Workload', desc: 'Feeling tired, overwhelmed, or burnt out' }, zh: { label: '压力/工作繁重', desc: '感到疲惫、压力大或职业倦怠' } },
+  { id: 'confidence', icon: <UserCheck size={24} />, th: { label: 'ความมั่นใจ/การสื่อสาร', desc: 'อยากพัฒนาตัวเอง สื่อสารให้ดีขึ้น' }, en: { label: 'Confidence & Communication', desc: 'Want to improve yourself and speak up' }, zh: { label: '自信/沟通', desc: '想提升自我，更好地表达' } },
+  { id: 'career', icon: <Target size={24} />, th: { label: 'เป้าหมาย/ทิศทาง', desc: 'อยากวางแผนหรือหาทิศทางในงาน' }, en: { label: 'Career Goals', desc: 'Looking for direction or planning growth' }, zh: { label: '目标/职业方向', desc: '寻找方向或规划职业发展' } },
+  { id: 'relationship', icon: <Users size={24} />, th: { label: 'ความสัมพันธ์ในงาน', desc: 'การทำงานร่วมกับผู้อื่น' }, en: { label: 'Work Relationships', desc: 'Navigating teamwork and colleagues' }, zh: { label: '工作人际关系', desc: '处理团队合作和同事关系' } },
+];
+
+const coachesData = [
+  {
+    id: 1,
+    name: { th: 'พี่ท็อพ', en: 'Coach Top', zh: 'Top 教练' },
+    style: 'Direct • Practical • Growth',
+    quote: { th: 'กรอบความคิดของเราเป็นตัวกำหนดว่าเราทำอะไรได้หรือไม่ได้', en: 'Our mindset determines what we can or cannot do.', zh: '我们的思维模式决定了我们能做什么或不能做什么。' },
+    desc: { th: 'หลายครั้งสิ่งที่เราติดอยู่ไม่ใช่ความยาก แต่คือ "ความไม่ชัดเจน" พี่ท็อพจะช่วยชวนคุยเพื่อคลี่คลายความกังวลนั้น ให้คุณเห็นเป้าหมายชัดขึ้นและกล้าก้าวต่อไปอย่างมั่นใจ', en: 'Often, what holds us back isn\'t the difficulty, but the "lack of clarity." I will help untangle those worries so you can see your goals clearly and move forward with confidence.', zh: '很多时候困住我们的不是困难，而是“不清晰”。我会通过交流帮您理清这些担忧，让您看清目标并自信地迈出下一步。' },
+    strengths: { th: ['ตั้งเป้าหมายได้ชัดเจน (Clarify Goals)', 'ปรับมุมมอง (Mindset & Reframe)', 'เปลี่ยนความตั้งใจเป็นการลงมือทำ'], en: ['Clarify Goals', 'Mindset & Reframe', 'Confidence to Action'], zh: ['明确目标 (Clarify Goals)', '调整思维 (Mindset & Reframe)', '化信念为行动'] },
+    duration: { th: '50 นาที', en: '50 Mins', zh: '50 分钟' },
+    tags: ['stress', 'confidence'],
+    recommendedFor: { th: 'แนะนำสำหรับ: ความเครียด, ความมั่นใจ, ต้องการความชัดเจน', en: 'Recommended for: Stress, Confidence, Clarity', zh: '推荐用于：压力、自信心、寻求清晰方向' },
+    bgColor: 'bg-blue-50',
+    tagColor: 'bg-blue-100 text-blue-700'
+  },
+  {
+    id: 2,
+    name: { th: 'พี่ตุ้ย', en: 'Coach Tui', zh: 'Tui 教练' },
+    style: 'Trust • Listening',
+    quote: { th: 'บางคนต้องการคำแนะนำ แต่บางคนแค่ต้องการ "คนฟังที่แท้จริง"', en: 'Some people need advice, but others just need a "true listener".', zh: '有些人需要建议，但有些人只是需要一个“真正的倾听者”。' },
+    desc: { th: 'พี่ตุ้ยเลือกที่จะเป็นผู้ฟังที่อยู่กับคุณอย่างตั้งใจ รับฟังด้วยหัวใจ และพร้อมดูแลความไว้วางใจนั้น เพื่อให้คุณได้ค้นพบคำตอบด้วยตัวของคุณเอง', en: 'I choose to be a listener who stays with you attentively. I listen with my heart and protect that trust, so you can discover the answers within yourself.', zh: '我选择成为一个全心全意陪伴您的倾听者。我用心地倾听，并守护这份信任，让您能在自己内心找到答案。' },
+    strengths: { th: ['รับฟังอย่างลึกซึ้ง โดยไม่ตัดสิน', 'ตั้งคำถามเพื่อให้คุณหาคำตอบได้เอง', 'สนับสนุนการเปลี่ยนแปลงจากภายใน'], en: ['Deep, Non-Judgmental Listening', 'Questions to help you find your answers', 'Self-Led Transformation'], zh: ['深入且不带偏见的倾听', '通过提问助您找到答案', '引导自我主导的蜕变'] },
+    duration: { th: '50 นาที', en: '50 Mins', zh: '50 分钟' },
+    tags: ['career'],
+    recommendedFor: { th: 'แนะนำสำหรับ: เป้าหมาย, การวางแผน, ทิศทางอาชีพ', en: 'Recommended for: Goals, Planning, Career Direction', zh: '推荐用于：目标设定、规划、职业方向' },
+    bgColor: 'bg-emerald-50',
+    tagColor: 'bg-emerald-100 text-emerald-700'
+  },
+  {
+    id: 3,
+    name: { th: 'พี่พร', en: 'Coach Porn', zh: 'Porn 教练' },
+    style: 'Encouraging • Pause • Breathe',
+    quote: { th: 'พื้นที่เล็กๆ เรียบง่าย สำหรับใจที่อยากพัก', en: 'A simple, small space for a mind that needs to rest.', zh: '一个简单温馨的小空间，给疲惫的心灵一个休憩之所。' },
+    desc: { th: 'มาคุยกันแบบสบายๆ ไม่ต้องกังวลเรื่องความสมบูรณ์แบบ ไม่ต้องเตรียมตัวอะไรมาเลย แค่พกความเป็นตัวคุณมาก็พอค่ะ พื้นที่นี้พร้อมโอบกอดและรับฟังเสมอ', en: 'Let\'s talk casually. No need to worry about being perfect or preparing anything. Just bring yourself. This space is always ready to embrace and listen to you.', zh: '让我们轻松地聊聊。不用担心不够完美，也不需要任何准备。只需带着真实的自己来就好。这个空间永远准备好拥抱和倾听您。' },
+    strengths: { th: ['รับฟังด้วยหัวใจ ทำให้รู้สึกมีคุณค่า', 'พื้นที่ปลอดภัย เรียบง่าย เป็นกันเอง', 'ช่วยให้กลับมาฟังเสียงใจตัวเอง'], en: ['Deep Empathy & Validation', 'Safe, simple, and friendly space', 'Reconnect with your inner voice'], zh: ['用心倾听，让您感受自身价值', '安全、简单、友好的空间', '重新找回内心的声音'] },
+    duration: { th: '45-60 นาที', en: '45-60 Mins', zh: '45-60 分钟' },
+    tags: ['confidence'],
+    recommendedFor: { th: 'แนะนำสำหรับ: ปัญหาเชิงงาน, การสื่อสาร, การตัดสินใจ', en: 'Recommended for: Work Issues, Communication, Decision Making', zh: '推荐用于：工作问题、沟通、决策' },
+    bgColor: 'bg-rose-50',
+    tagColor: 'bg-rose-100 text-rose-700'
+  },
+  {
+    id: 4,
+    name: { th: 'พี่ซุ้ม', en: 'Coach Sum', zh: 'Sum 教练' },
+    style: 'Supportive • Approachable • Positive',
+    quote: { th: 'คุยได้ทุกเรื่อง ให้ใจได้พัก แล้วค่อยเห็นทางไปต่อ', en: 'Talk about anything, let your mind rest, then find the way forward.', zh: '无所不谈，让心休息，然后找到前进的方向。' },
+    desc: { th: 'หลายครั้งเราไม่ได้ต้องการคำแนะนำทันที แต่ต้องการ "พื้นที่ปลอดภัย" ที่ทำให้เราได้ระบายออกมาอย่างเต็มที่ พี่ซุ้มจะใช้หลักจิตวิทยาพูดคุยอย่างเป็นกันเอง เพื่อให้คุณมองเห็นทางเลือกได้ชัดเจนขึ้น', en: 'Often we don\'t need immediate advice, but a "safe space" to vent fully. I use psychology to chat in a friendly way, helping you see your options more clearly.', zh: '很多时候我们不需要立刻的建议，而是需要一个“安全空间”来尽情倾诉。我运用心理学以友好的方式与您交谈，帮您更清晰地看到自己的选择。' },
+    strengths: { th: ['เข้าถึงง่าย คุยด้วยแล้วสบายใจ', 'พื้นที่ผ่อนคลาย เต็มไปด้วยพลังบวก', 'เปิดใจคุยได้ทุกเรื่องอย่างไว้วางใจ'], en: ['Approachable and easy to talk to', 'Calm space full of positive energy', 'Trustworthy for any topic'], zh: ['平易近人，易于交流', '充满正能量的放松空间', '值得信赖，可谈论任何话题'] },
+    duration: { th: '50 นาที', en: '50 Mins', zh: '50 分钟' },
+    tags: ['stress'],
+    recommendedFor: { th: 'แนะนำสำหรับ: การทบทวนใจ, ปรับมุมมอง, สมดุลชีวิตการทำงาน', en: 'Recommended for: Self-reflection, Mindset shift, Work-life balance', zh: '推荐用于：自我反思、思维转变、工作与生活平衡' },
+    bgColor: 'bg-amber-50',
+    tagColor: 'bg-amber-100 text-amber-700'
+  },
+  {
+    id: 5,
+    name: { th: 'พี่เฟิน', en: 'Coach Fern', zh: 'Fern 教练' },
+    style: 'Listening • Finding • Becoming',
+    quote: { th: 'ฟังด้วยใจ หาคำตอบไปด้วยกัน', en: 'Listening with heart, finding answers together.', zh: '用心倾听，共同寻找答案。' },
+    desc: { th: 'โค้ชคือพื้นที่ปลอดภัยที่อนุญาตให้คุณได้หยุดคิด ทบทวน และพูดความรู้สึกอย่างตรงไปตรงมา พี่เฟินพร้อมชวนคุณเปิดมุมมองใหม่ๆ เพื่อค้นหาคำตอบที่เป็นของคุณเองจริงๆ', en: 'Coaching is a safe space that allows you to pause, reflect, and speak your feelings honestly. I am ready to help you open up new perspectives to find answers that are truly yours.', zh: '辅导是一个安全空间，允许您停下来思考、反思，并真诚地表达自己的感受。我准备好帮您开启新的视角，寻找真正属于您自己的答案。' },
+    strengths: { th: ['ช่วยให้เข้าใจตนเองมากขึ้น (Self-awareness)', 'ปรับมุมมองใหม่ๆ อย่างสร้างสรรค์', 'ดูแลสมดุลทางอารมณ์'], en: ['Increase Self-awareness', 'Creative Mindset Reframe', 'Emotional Balance'], zh: ['提升自我认知 (Self-awareness)', '创造性的思维转换', '情绪平衡'] },
+    duration: { th: '45-60 นาที', en: '45-60 Mins', zh: '45-60 分钟' },
+    tags: ['relationship'],
+    recommendedFor: { th: 'แนะนำสำหรับ: ความสัมพันธ์, การทำงานเป็นทีม, การอยู่ร่วมกัน', en: 'Recommended for: Relationships, Teamwork, Collaboration', zh: '推荐用于：人际关系、团队合作、协作' },
+    bgColor: 'bg-purple-50',
+    tagColor: 'bg-purple-100 text-purple-700'
+  }
+];
+
+const faqsData = [
+  { 
+    th: { q: 'ต้องมีปัญหาใหญ่ก่อนจึงจะขอโค้ชได้หรือไม่?', a: 'ไม่จำเป็นเลยครับ พนักงานทุกคนสามารถแวะมารับการโค้ชเพื่อทบทวนตัวเอง วางเป้าหมาย หรือแค่แวะมาระบายความกังวลใจเล็กๆ น้อยๆ ก็ได้เช่นกัน' },
+    en: { q: 'Do I need to have a major problem to request coaching?', a: 'Not at all. Any employee can request coaching for self-reflection, goal setting, or simply to talk about minor worries.' },
+    zh: { q: '我必须有很大的问题才能申请辅导吗？', a: '完全不需要。任何员工都可以申请辅导进行自我反思、设定目标，或者仅仅是聊聊小烦恼。' }
+  },
+  { 
+    th: { q: 'ข้อมูลที่เล่าให้โค้ชฟัง จะถูกเก็บเป็นความลับไหม?', a: 'เป็นความลับแน่นอนครับ การพูดคุยจะเป็นไปแบบส่วนตัว โค้ชทุกคนจะรักษาความลับและให้เกียรติความเป็นส่วนตัวของคุณตามจรรยาบรรณวิชาชีพ' },
+    en: { q: 'Is the information shared during coaching confidential?', a: 'Absolutely. The sessions are entirely private. All coaches maintain strict confidentiality and respect your privacy.' },
+    zh: { q: '辅导过程中分享的信息是保密的吗？', a: '绝对保密。对话是完全私密的。所有教练都严格遵守保密原则并尊重您的隐私。' }
+  },
+  { 
+    th: { q: 'ฉันสามารถนำเรื่องอะไรมาพูดคุยได้บ้าง?', a: 'คุยได้แทบทุกเรื่องเลยครับ ตั้งแต่เรื่องงาน ความเครียด การพัฒนาตัวเอง ความมั่นใจ การสื่อสาร ปัญหาการทำงานร่วมกับผู้อื่น หรือเรื่องที่กำลังสับสนและต้องการความชัดเจน' },
+    en: { q: 'What topics can I discuss?', a: 'You can discuss almost anything: work, stress, personal development, confidence, communication, teamwork challenges, or anything you feel confused about and need clarity on.' },
+    zh: { q: '我可以讨论什么话题？', a: '您几乎可以讨论任何话题：工作、压力、个人发展、自信、沟通、团队合作挑战，或者任何让您感到困惑并需要清晰思路的事情。' }
+  },
+  { 
+    th: { q: 'การคุยกับโค้ชแต่ละครั้ง ใช้เวลาประมาณเท่าไหร่?', a: 'โดยปกติจะอยู่ที่ประมาณ 45-60 นาทีครับ ทั้งนี้ขึ้นอยู่กับหัวข้อและความสะดวกของแต่ละคน' },
+    en: { q: 'How long is each coaching session?', a: 'Usually, it takes about 45-60 minutes, depending on the topic and your availability.' },
+    zh: { q: '每次辅导需要多长时间？', a: '通常每次约 45-60 分钟，具体取决于讨论的话题和您的时间安排。' }
+  },
+  { 
+    th: { q: 'ลงทะเบียนเสร็จแล้ว ต้องทำยังไงต่อ?', a: 'ไม่ต้องทำอะไรเพิ่มแล้วครับ รอแค่ทีมงานติดต่อกลับไป เพื่อช่วยยืนยันโค้ชและหาวันเวลานัดหมายที่คุณสะดวกที่สุดให้ครับ' },
+    en: { q: 'What happens after I register?', a: 'You just need to wait. Our team will contact you shortly to confirm your coach and schedule a convenient time for you.' },
+    zh: { q: '预约后接下来会怎样？', a: '您只需等待。我们的团队会很快联系您，确认您的教练并为您安排合适的时间。' }
+  },
+  { 
+    th: { q: 'ถ้าคุยแล้วรู้สึกไม่คลิก สามารถเปลี่ยนโค้ชได้ไหม?', a: 'ได้แน่นอนครับ เราสนับสนุนให้คุณเลือกโค้ชที่คุณคุยด้วยแล้วรู้สึก "สบายใจที่สุด" หากอยากเปลี่ยนท่านใหม่สามารถแจ้งทีมงานได้เลย' },
+    en: { q: 'Can I change my coach if we don\'t click?', a: 'Definitely. We encourage you to find a coach you feel "most comfortable" with. If you want to change, just let our team know.' },
+    zh: { q: '如果感觉不合拍，我可以更换教练吗？', a: '当然可以。我们鼓励您找到一位让您感到“最舒服”的教练。如果您想更换，只需告诉我们的团队。' }
+  },
+  { 
+    th: { q: 'หากติดธุระด่วน สามารถขอเลื่อนเวลานัดได้ไหม?', a: 'สามารถเลื่อนได้ครับ เพียงแค่แจ้งทีมงานล่วงหน้า เพื่อที่เราจะได้ช่วยประสานงานหาเวลานัดหมายใหม่ให้ครับ' },
+    en: { q: 'Can I reschedule if I have an emergency?', a: 'Yes, you can. Just inform our team in advance so we can help arrange a new appointment time.' },
+    zh: { q: '如果遇到紧急情况，我可以改期吗？', a: '可以的。只需提前通知我们的团队，我们会协助安排新的预约时间。' }
+  },
+  { 
+    th: { q: 'สามารถขอรับการโค้ชแบบไม่เปิดเผยชื่อจริงได้ไหม?', a: 'ทำได้ครับ คุณสามารถใช้ "ชื่อเล่น" หรือนามแฝงในการลงทะเบียนได้ โดยทีมงานจะขอเก็บเฉพาะข้อมูลเบอร์โทรหรืออีเมลที่จำเป็นสำหรับการติดต่อเพื่อนัดหมายเท่านั้นครับ' },
+    en: { q: 'Can I receive coaching anonymously?', a: 'Yes, you can use a nickname or an alias to register. Our team will only need your phone number or email for scheduling purposes.' },
+    zh: { q: '我可以匿名接受辅导吗？', a: '可以，您可以使用昵称或化名进行注册。我们的团队仅需要您的电话号码或电子邮件以便安排时间。' }
+  },
+];
+
+// --- MOCK SCHEDULE LOGIC ---
+const generateMockSchedule = (coachName) => {
+  const schedule = [];
+  const today = new Date();
+
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+    const seed = (coachName?.length || 0) + d.getDate();
+    const allSlots = ['09:00', '10:00', '11:00', '13:30', '14:30', '15:30', '16:00'];
+    const availableSlots = allSlots.filter((_, idx) => (seed + idx) % 3 !== 0);
+
+    schedule.push({
+      date: d,
+      slots: availableSlots
+    });
+
+    if(schedule.length === 4) break; 
+  }
+  return schedule;
+};
+
+// --- INTERACTIVE COMPONENTS ---
+
+const Navbar = ({ lang, setLang, content, scrollPosition }) => {
+  const isScrolled = scrollPosition > 20;
+  const [isLangOpen, setIsLangOpen] = useState(false);
+
+  const langLabels = {
+    th: 'TH - ไทย',
+    en: 'EN - Eng',
+    zh: 'CN - 中文'
+  };
+
+  const getShortLabel = (key) => key === 'zh' ? 'CN' : key.toUpperCase();
+
+  return (
+    <nav className={`fixed top-0 z-40 w-full transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'}`}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-12 md:h-14">
+          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+            <ShieldCheck className={`w-8 h-8 transition-transform group-hover:scale-110 ${isScrolled ? 'text-teal-600' : 'text-teal-700'}`} />
+            <span className={`font-bold text-xl tracking-tight transition-colors ${isScrolled ? 'text-teal-900' : 'text-teal-900'}`}>SAFE TO SHARE</span>
+          </div>
+          <div className="hidden lg:flex space-x-6 xl:space-x-8">
+            <a href="#about" className="text-teal-800 hover:text-teal-500 font-medium transition-colors hover:-translate-y-0.5 inline-block transform duration-200">{content.nav.about}</a>
+            <a href="#compare" className="text-teal-800 hover:text-teal-500 font-medium transition-colors hover:-translate-y-0.5 inline-block transform duration-200">{content.nav.compare}</a>
+            <a href="#ai-assessment" className="text-teal-800 hover:text-teal-500 font-medium transition-colors hover:-translate-y-0.5 inline-block transform duration-200">{content.nav.ai}</a>
+            <a href="#steps" className="text-teal-800 hover:text-teal-500 font-medium transition-colors hover:-translate-y-0.5 inline-block transform duration-200">{content.nav.steps}</a>
+            <a href="#coaches" className="text-teal-800 hover:text-teal-500 font-medium transition-colors hover:-translate-y-0.5 inline-block transform duration-200">{content.nav.coaches}</a>
+          </div>
+          <div className="flex items-center gap-3">
+
+            {/* Language Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsLangOpen(!isLangOpen)}
+                className="flex items-center gap-2 text-sm font-bold text-gray-700 hover:text-teal-700 bg-white/50 backdrop-blur-sm border border-gray-200 hover:border-teal-300 hover:bg-teal-50 px-3 py-2 rounded-xl transition-all shadow-sm"
+              >
+                <Globe size={16} className={isLangOpen ? 'text-teal-600' : 'text-gray-500'} />
+                {getShortLabel(lang)}
+                <ChevronDown size={14} className={`transition-transform duration-300 text-gray-400 ${isLangOpen ? 'rotate-180 text-teal-600' : ''}`} />
+              </button>
+
+              {isLangOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsLangOpen(false)}></div>
+                  <div className="absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                    {Object.entries(langLabels).map(([key, label]) => (
+                      <button 
+                        key={key}
+                        onClick={() => { setLang(key); setIsLangOpen(false); }}
+                        className={`w-full text-left px-5 py-3 text-[15px] font-bold transition-colors flex items-center justify-between group ${lang === key ? 'text-teal-700 bg-teal-50' : 'text-gray-600 hover:bg-gray-50 hover:text-teal-600'}`}
+                      >
+                        {label}
+                        {lang === key && <CheckCircle2 size={16} className="text-teal-600" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <a href="#coaches" className="hidden sm:inline-block bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-xl font-bold transition-all shadow-md hover:shadow-teal-500/30 hover:-translate-y-0.5 active:scale-95">
+              {content.nav.register}
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+const Hero = ({ content }) => (
+  <div className="relative overflow-hidden bg-white pt-28 pb-20 lg:pt-36 lg:pb-28">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="text-center max-w-3xl mx-auto">
+        <FadeInSection>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 text-teal-800 font-medium text-sm mb-6 animate-bounce" style={{animationDuration: '3s'}}>
+            <HeartHandshake size={16} />
+            {content.hero.subtitle}
+          </div>
+        </FadeInSection>
+
+        <FadeInSection delay={100}>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-teal-900 leading-tight mb-6 tracking-tight">
+            {content.hero.title}
+          </h1>
+        </FadeInSection>
+
+        <FadeInSection delay={200}>
+          <p className="text-xl text-teal-700 mb-10 leading-relaxed">
+            {content.hero.desc1}<br/>
+            {content.hero.desc2} <span className="font-bold text-teal-800 bg-teal-100/50 px-2 py-0.5 rounded-lg">{content.hero.highlight}</span>
+          </p>
+        </FadeInSection>
+
+        <FadeInSection delay={300}>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="#coaches" className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all shadow-lg shadow-teal-600/30 hover:shadow-xl hover:shadow-teal-600/40 hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group">
+              {content.hero.btn} <ChevronRight size={20} className="transition-transform group-hover:translate-x-1" />
+            </a>
+          </div>
+        </FadeInSection>
+      </div>
+    </div>
+
+    <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 opacity-20 pointer-events-none animate-pulse" style={{animationDuration: '4s'}}>
+      <div className="w-96 h-96 bg-teal-300 rounded-full blur-3xl"></div>
+    </div>
+    <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 opacity-20 pointer-events-none animate-pulse" style={{animationDuration: '5s'}}>
+      <div className="w-80 h-80 bg-emerald-300 rounded-full blur-3xl"></div>
+    </div>
+  </div>
+);
+
+const Values = ({ content }) => (
+  <div id="about" className="py-20 bg-white">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <FadeInSection>
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-teal-900 mb-4">{content.about.title}</h2>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            {content.about.desc}
+          </p>
+        </div>
+      </FadeInSection>
+
+      <div className="grid md:grid-cols-3 gap-8 items-stretch">
+        {[
+          { icon: <Lock size={32} />, title: content.about.val1.title, desc: content.about.val1.desc },
+          { icon: <HeartHandshake size={32} />, title: content.about.val2.title, desc: content.about.val2.desc },
+          { icon: <ChevronRight size={32} />, title: content.about.val3.title, desc: content.about.val3.desc }
+        ].map((item, index) => (
+          <FadeInSection key={index} delay={index * 150} className="h-full">
+            <div className="group bg-gray-50 hover:bg-emerald-50 p-8 rounded-3xl text-center border border-gray-100 hover:border-emerald-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 h-full flex flex-col">
+              <div className="bg-white w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm text-emerald-600 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold text-teal-900 mb-3">{item.title}</h3>
+              <p className="text-gray-600 group-hover:text-gray-800 transition-colors mt-auto">{item.desc}</p>
+            </div>
+          </FadeInSection>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const ComparisonSection = ({ content }) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setIsIntersecting(true);
+      },
+      { threshold: 0.2 }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div id="compare" className="py-20 bg-gradient-to-b from-white to-gray-50/80 font-sans relative" ref={sectionRef}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+        <FadeInSection>
+          <div className="text-center mb-16 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[150%] bg-green-50/40 blur-3xl rounded-full -z-10 pointer-events-none"></div>
+
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-teal-900 text-teal-50 font-bold text-sm tracking-widest shadow-md mb-8 hover:scale-105 transition-transform cursor-default">
+              <Sparkles size={16} className="text-yellow-400 animate-pulse" />
+              {content.compare.badge}
+            </div>
+
+            <h2 className="text-3xl md:text-5xl font-extrabold text-teal-900 mb-6 leading-tight">
+              {content.compare.title1} <br/>
+              {content.compare.title2}
+            </h2>
+
+            <div className="text-gray-600 text-lg md:text-xl max-w-3xl mx-auto font-medium">
+              <p className="mb-4">{content.compare.subtitle1}</p>
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-4">
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-teal-200 text-teal-800 rounded-lg shadow-sm font-bold shadow-teal-100/50 hover:scale-105 transition-transform cursor-default">
+                  <Sprout size={20} className="text-teal-600"/> {content.compare.coachBtn}
+                </span>
+                <span className="text-gray-400 text-sm font-semibold">{content.compare.or}</span>
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 text-rose-800 rounded-lg shadow-sm font-bold shadow-rose-100/50 hover:scale-105 transition-transform cursor-default">
+                  <HeartPulse size={20} className="text-rose-600"/> {content.compare.psychBtn}
+                </span>
+              </div>
+              <p>{content.compare.subtitle2}</p>
+            </div>
+          </div>
+        </FadeInSection>
+
+        <div className="grid md:grid-cols-2 gap-8 mb-24 max-w-5xl mx-auto items-stretch">
+          <FadeInSection delay={100} className="h-full">
+            <div className="group bg-white rounded-[2.5rem] p-8 border-2 border-teal-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden flex flex-col h-full hover:shadow-2xl hover:shadow-teal-500/10 hover:-translate-y-2 transition-all duration-300 cursor-default">
+              <div className="absolute top-0 right-0 -translate-y-4 translate-x-4 opacity-5 pointer-events-none group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
+                <Sprout size={160} />
+              </div>
+              <div className="flex items-center gap-5 mb-8 relative z-10">
+                <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center text-teal-600 shrink-0 border-2 border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors duration-300">
+                  <Sprout size={40} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-3xl font-black text-gray-900 group-hover:text-teal-700 transition-colors">{content.compare.coach.title}</h3>
+                  <p className="text-gray-500 font-bold text-base mt-1">{content.compare.coach.subtitle}</p>
+                </div>
+              </div>
+
+              <div className="bg-white border-2 border-teal-100 rounded-3xl p-6 mb-10 shadow-sm relative z-10 text-center group-hover:bg-teal-50/50 transition-colors duration-300">
+                <p className="text-teal-800 font-bold text-lg leading-relaxed">{content.compare.coach.quote}</p>
+              </div>
+
+              <ul className="space-y-6 relative z-10 flex-grow">
+                {content.compare.coach.items.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-4 text-gray-700">
+                    <CheckCircle2 size={24} className="text-teal-500 mt-0.5 shrink-0" />
+                    <span className="leading-relaxed font-semibold">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FadeInSection>
+
+          <FadeInSection delay={200} className="h-full">
+            <div className="group bg-white rounded-[2.5rem] p-8 border-2 border-rose-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden flex flex-col h-full hover:shadow-2xl hover:shadow-rose-500/10 hover:-translate-y-2 transition-all duration-300 cursor-default">
+              <div className="absolute top-0 right-0 -translate-y-4 translate-x-4 opacity-5 pointer-events-none text-rose-900 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
+                <HeartPulse size={160} />
+              </div>
+              <div className="flex items-center gap-5 mb-8 relative z-10">
+                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 shrink-0 border-2 border-rose-100 group-hover:bg-rose-500 group-hover:text-white transition-colors duration-300">
+                  <HeartPulse size={40} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <h3 className="text-3xl font-black text-gray-900 group-hover:text-rose-700 transition-colors">{content.compare.psych.title}</h3>
+                  <p className="text-gray-500 font-bold text-base mt-1">{content.compare.psych.subtitle}</p>
+                </div>
+              </div>
+
+              <div className="bg-white border-2 border-rose-100 rounded-3xl p-6 mb-10 shadow-sm relative z-10 text-center group-hover:bg-rose-50/50 transition-colors duration-300">
+                <p className="text-rose-800 font-bold text-lg leading-relaxed">{content.compare.psych.quote}</p>
+              </div>
+
+              <ul className="space-y-6 relative z-10 flex-grow">
+                {content.compare.psych.items.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-4 text-gray-700">
+                    <CheckCircle2 size={24} className="text-rose-500 mt-0.5 shrink-0" />
+                    <span className="leading-relaxed font-semibold">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </FadeInSection>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto items-stretch">
+
+          {/* STEP 1: Decision Matrix */}
+          <FadeInSection delay={100} className="h-full">
+            <div className="flex flex-col h-full w-full">
+              <div className="mb-6">
+                <span className="inline-block px-3 py-1 bg-white text-gray-700 border border-gray-200 rounded-full text-xs font-bold tracking-wider mb-3 shadow-sm uppercase">
+                  {content.compare.step1.badge}
+                </span>
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">{content.compare.step1.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-md">{content.compare.step1.desc}</p>
+              </div>
+
+              <div className="flex flex-col flex-grow">
+                {/* Matrix Container row */}
+                <div className="flex flex-row relative h-[420px] md:h-[450px]">
+
+                  {/* Y Axis Column */}
+                  <div className="w-16 flex flex-col items-center justify-between py-6 relative z-10">
+                    <div className="flex flex-col items-center gap-1 -mt-4">
+                      <CloudLightning size={22} className="text-purple-700" fill="currentColor" strokeWidth={1} />
+                      <span className="text-[11px] font-extrabold text-rose-800/80 tracking-wide text-center leading-tight">{content.compare.step1.yAxisTop}</span>
+                    </div>
+
+                    {/* The Y Line */}
+                    <div className="flex-1 w-[3px] bg-gray-200 rounded-full my-4 relative flex items-center justify-center">
+                      <div className="bg-[#f9fafb] py-4 px-2 absolute rounded-md whitespace-nowrap z-20" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                        <span className="text-gray-400 font-extrabold tracking-[0.25em] text-[11px]">{content.compare.step1.yAxisLabel}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1 -mb-4">
+                      <span className="text-[11px] font-extrabold text-orange-600/80 tracking-wide text-center leading-tight">{content.compare.step1.yAxisBottom}</span>
+                      <Sun size={24} className="text-orange-500" strokeWidth={2.5} />
+                    </div>
+                  </div>
+
+                  {/* Grid Box */}
+                  <div className="flex-1 bg-[#fefefe] border-2 border-gray-100 rounded-[2.5rem] p-4 shadow-sm relative ml-2">
+                    {/* Center point */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-200 border-[5px] border-white rounded-full z-20 shadow-sm"></div>
+
+                    {/* 2x2 Grid */}
+                    <div className="grid grid-cols-2 grid-rows-2 h-full w-full gap-4 relative">
+
+                      {/* Q1: Top Left (Pink) */}
+                      <div className="bg-[#fef6f8] border-[1.5px] border-[#fce9ef] rounded-[2rem] p-4 flex flex-col items-center justify-center text-center hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 group cursor-default relative overflow-hidden">
+                        <div className="flex flex-col items-center justify-center transition-transform duration-300 group-hover:-translate-y-3">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                            <Heart className="text-pink-500" fill="currentColor" size={32} strokeWidth={1}/>
+                          </div>
+                          <h4 className="font-extrabold text-[#e0667d] text-lg mb-1.5">{content.compare.step1.q1.title}</h4>
+                          <p className="text-[13px] text-[#db7589] font-semibold leading-snug whitespace-pre-line">{content.compare.step1.q1.desc}</p>
+                        </div>
+                        {/* Interactive Recommendation Badge */}
+                        <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 pointer-events-none w-full flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-pink-200 text-pink-600 rounded-full text-[11px] font-extrabold shadow-sm">
+                            <HeartPulse size={14} strokeWidth={2.5}/> {content.compare.step1.recPsych}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Q2: Top Right (Orange) */}
+                      <div className="bg-[#fefcf3] border-[1.5px] border-[#fcf3d9] rounded-[2rem] p-4 flex flex-col items-center justify-center text-center hover:scale-[1.02] hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-300 group cursor-default relative overflow-hidden">
+                        <div className="flex flex-col items-center justify-center transition-transform duration-300 group-hover:-translate-y-3">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                            <BrainCircuit className="text-amber-500" size={32} strokeWidth={1.5}/>
+                          </div>
+                          <h4 className="font-extrabold text-[#d98b46] text-lg mb-1.5">{content.compare.step1.q2.title}</h4>
+                          <p className="text-[13px] text-[#d98b46] font-semibold leading-snug whitespace-pre-line">{content.compare.step1.q2.desc}</p>
+                        </div>
+                        {/* Interactive Recommendation Badge */}
+                        <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 pointer-events-none w-full flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-200 text-amber-600 rounded-full text-[11px] font-extrabold shadow-sm">
+                            <HeartPulse size={14} strokeWidth={2.5}/> {content.compare.step1.recPsych}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Q3: Bottom Left (Blue) */}
+                      <div className="bg-[#f4f7fb] border-[1.5px] border-[#e2ebf4] rounded-[2rem] p-4 flex flex-col items-center justify-center text-center hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group cursor-default relative overflow-hidden">
+                        <div className="flex flex-col items-center justify-center transition-transform duration-300 group-hover:-translate-y-3">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                            <Battery className="text-[#84a98c]" size={32} fill="#d1e0d7" strokeWidth={1}/>
+                          </div>
+                          <h4 className="font-extrabold text-[#5c80a8] text-lg mb-1.5">{content.compare.step1.q3.title}</h4>
+                          <p className="text-[13px] text-[#7192b8] font-semibold leading-snug whitespace-pre-line">{content.compare.step1.q3.desc}</p>
+                        </div>
+                        {/* Interactive Recommendation Badge */}
+                        <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 pointer-events-none w-full flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 text-[#5c80a8] rounded-full text-[11px] font-extrabold shadow-sm">
+                            <Sprout size={14} strokeWidth={2.5}/> {content.compare.step1.recCoach}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Q4: Bottom Right (Green) */}
+                      <div className="bg-[#f0f7f3] border-[1.5px] border-[#d7eadf] rounded-[2rem] p-4 flex flex-col items-center justify-center text-center hover:scale-[1.02] hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group cursor-default relative overflow-hidden">
+                        <div className="flex flex-col items-center justify-center transition-transform duration-300 group-hover:-translate-y-3">
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3">
+                            <Rocket className="text-emerald-500" size={32} fill="#fee2e2" strokeWidth={1}/>
+                          </div>
+                          <h4 className="font-extrabold text-[#3a7d5a] text-lg mb-1.5">{content.compare.step1.q4.title}</h4>
+                          <p className="text-[13px] text-[#4f8a6b] font-semibold leading-snug whitespace-pre-line">{content.compare.step1.q4.desc}</p>
+                        </div>
+                        {/* Interactive Recommendation Badge */}
+                        <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-300 pointer-events-none w-full flex justify-center">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-200 text-emerald-600 rounded-full text-[11px] font-extrabold shadow-sm">
+                            <Sprout size={14} strokeWidth={2.5}/> {content.compare.step1.recCoach}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* X Axis Row */}
+                <div className="flex flex-row items-center justify-between ml-[72px] md:ml-[80px] mt-6 relative h-8">
+                  <span className="text-[11px] font-extrabold text-gray-500 mr-2 shrink-0">{content.compare.step1.xAxisLeft}</span>
+                  <div className="flex-1 h-[3px] bg-gray-200 rounded-full relative flex items-center justify-center min-w-[50px]">
+                    <div className="bg-[#f9fafb] px-4 py-1 absolute rounded-md z-20">
+                      <span className="text-gray-400 font-extrabold tracking-[0.25em] text-[11px]">{content.compare.step1.xAxisLabel}</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-extrabold text-teal-700 ml-2 shrink-0 flex items-center">
+                    {content.compare.step1.xAxisRight} <ChevronRight size={14}/>
+                  </span>
+                </div>
+
+              </div>
+            </div>
+          </FadeInSection>
+
+          {/* STEP 2: Focus Comparison */}
+          <FadeInSection delay={300} className="h-full">
+            <div className="flex flex-col h-full w-full">
+              <div className="mb-6">
+                <span className="inline-block px-3 py-1 bg-white text-gray-700 border border-gray-200 rounded-full text-xs font-bold tracking-wider mb-3 shadow-sm uppercase">
+                  {content.compare.step2.badge}
+                </span>
+                <h3 className="text-2xl font-extrabold text-gray-900 mb-2">{content.compare.step2.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-md">{content.compare.step2.desc}</p>
+              </div>
+
+              <div className="flex flex-col gap-6 mt-auto flex-grow justify-center">
+
+                {/* Bar 1 */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-[#fce9ef] flex items-center justify-center text-rose-500 shadow-inner">🕰️</div>
+                    <h4 className="font-bold text-gray-800 text-lg">{content.compare.step2.bar1}</h4>
+                  </div>
+                  {/* Psych */}
+                  <div className="flex items-center gap-4 mb-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#b4485e] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.psychLabel} <HeartPulse size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#b4485e] rounded-full flex items-center justify-end px-3 text-white text-[11px] font-bold transition-all duration-[1500ms] ease-out shadow-inner"
+                           style={{ width: isIntersecting ? '95%' : '0%' }}>
+                        {isIntersecting ? '95%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Coach */}
+                  <div className="flex items-center gap-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#4da898] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.coachLabel} <Sprout size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#c9e4de] rounded-full flex items-center justify-end px-3 text-[#3a7d5a] text-[11px] font-bold transition-all duration-[1500ms] ease-out"
+                           style={{ width: isIntersecting ? '15%' : '0%' }}>
+                        {isIntersecting ? '15%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bar 2 */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-[#e2ebf4] flex items-center justify-center text-blue-500 shadow-inner">🎯</div>
+                    <h4 className="font-bold text-gray-800 text-lg">{content.compare.step2.bar2}</h4>
+                  </div>
+                  {/* Psych */}
+                  <div className="flex items-center gap-4 mb-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#db7589] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.psychLabel} <HeartPulse size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#eababc] rounded-full flex items-center justify-end px-3 text-[#b4485e] text-[11px] font-bold transition-all duration-[1500ms] ease-out"
+                           style={{ width: isIntersecting ? '30%' : '0%' }}>
+                        {isIntersecting ? '30%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Coach */}
+                  <div className="flex items-center gap-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#3ea88f] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.coachLabel} <Sprout size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#41b097] rounded-full flex items-center justify-end px-3 text-white text-[11px] font-bold transition-all duration-[1500ms] ease-out shadow-inner"
+                           style={{ width: isIntersecting ? '95%' : '0%' }}>
+                        {isIntersecting ? '95%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bar 3 */}
+                <div className="bg-white rounded-[2rem] p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-[#fcf3d9] flex items-center justify-center text-orange-500 shadow-inner">🔥</div>
+                    <h4 className="font-bold text-gray-800 text-lg">{content.compare.step2.bar3}</h4>
+                  </div>
+                  {/* Psych */}
+                  <div className="flex items-center gap-4 mb-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#b4485e] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.psychLabel} <HeartPulse size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#df97a3] rounded-full flex items-center justify-end px-3 text-[#7a2e3f] text-[11px] font-bold transition-all duration-[1500ms] ease-out"
+                           style={{ width: isIntersecting ? '40%' : '0%' }}>
+                        {isIntersecting ? '40%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Coach */}
+                  <div className="flex items-center gap-4 group cursor-default">
+                    <div className="w-24 text-right text-[15px] font-bold text-[#3ea88f] flex items-center justify-end gap-1.5 shrink-0 group-hover:scale-105 transition-transform">
+                      {content.compare.step2.coachLabel} <Sprout size={16} />
+                    </div>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+                      <div className="h-full bg-[#358774] rounded-full flex items-center justify-end px-3 text-white text-[11px] font-bold transition-all duration-[1500ms] ease-out shadow-inner"
+                           style={{ width: isIntersecting ? '100%' : '0%' }}>
+                        {isIntersecting ? '100%' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </FadeInSection>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AIAssessmentSection = ({ content }) => {
+  const [text, setText] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleSubmit = () => {
+    if (!text.trim()) return;
+    setIsAnalyzing(true);
+    setResult(null);
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      try {
+        const lowerText = text.toLowerCase();
+        const isZone1 = ["ตาย", "ไม่อยากอยู่", "ไม่อยากตื่น", "ทำร้ายตัวเอง", "ทรมาน", "ดิ่ง", "หดหู่", "ไม่ไหว", "แพนิค", "เศร้า", "ร้องไห้", "ซึมเศร้า", "depress", "cry", "sad", "anxiety", "panic", "suicide", "die", "抑郁", "哭", "痛苦", "死", "不想活"].some(k => lowerText.includes(k));
+        const isZone2 = ["เครียด", "กดดัน", "หนัก", "burnout", "สับสน", "เหนื่อย", "ท้อ", "ไม่มีเวลา", "มืดแปดด้าน", "stress", "pressure", "exhausted", "burn out", "tired", "压力", "累", "迷茫"].some(k => lowerText.includes(k));
+        const isZone3 = ["เบื่อ", "หมดไฟ", "เนือย", "ขี้เกียจ", "ไม่รู้", "เรื่อยๆ", "เซ็ง", "bored", "lazy", "unmotivated", "lost", "无聊", "没动力", "疲倦"].some(k => lowerText.includes(k));
+        const isZone4 = ["พัฒนา", "เป้าหมาย", "เติบโต", "มั่นใจ", "ท้าทาย", "เก่งขึ้น", "อยากพัฒนา", "อยากก้าวหน้า", "improve", "goal", "grow", "confidence", "challenge", "better", "发展", "目标", "成长", "自信"].some(k => lowerText.includes(k));
+        let matchedDesc = content.ai.defaultDesc;
+        if (isZone1) matchedDesc = content.ai.zone1Desc;
+        else if (isZone2) matchedDesc = content.ai.zone2Desc;
+        else if (isZone4) matchedDesc = content.ai.zone4Desc;
+        else if (isZone3) matchedDesc = content.ai.zone3Desc;
+        setResult({
+          desc: matchedDesc || "ขอบคุณที่แชร์ข้อมูลครับ",
+          disclaimer: content.ai.disclaimer
+        });
+      } catch (err) {
+        console.error("AI Analysis Error:", err);
+        setIsAnalyzing(false);
+      }
+    }, 1500);
+  };
+
+
+  const handleClear = () => {
+    setText('');
+    setResult(null);
+  };
+
+  return (
+    <div id="ai-assessment" className="py-20 bg-[#eef6f4] relative border-y border-teal-100/50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <FadeInSection>
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white text-teal-800 border border-teal-200 rounded-full text-xs font-bold tracking-widest shadow-sm uppercase mb-6">
+              <Bot size={16} className="text-teal-600"/> {content.ai.badge}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-black text-[#1F3A33] mb-4">
+              {content.ai.title}
+            </h2>
+            <p className="text-teal-800/80 text-lg leading-relaxed max-w-2xl mx-auto font-medium">
+              {content.ai.desc}
+            </p>
+          </div>
+        </FadeInSection>
+
+        <FadeInSection delay={200}>
+          <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl shadow-teal-900/5 border border-white">
+            <div className="relative mb-6">
+              <textarea 
+                rows="5"
+                className="w-full bg-[#f8fbfb] border-2 border-teal-50 rounded-2xl p-5 text-gray-700 placeholder-gray-400 focus:outline-none focus:border-teal-400 focus:bg-white transition-all resize-none font-medium"
+                placeholder={content.ai.placeholder}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                disabled={isAnalyzing}
+              ></textarea>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-2">
+              <button 
+                onClick={handleSubmit}
+                disabled={isAnalyzing || !text.trim()}
+                className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all ${
+                  isAnalyzing || !text.trim() 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                  : 'bg-[#1a362d] hover:bg-teal-900 text-white shadow-lg active:scale-[0.98]'
+                }`}
+              >
+                {isAnalyzing ? (
+                  <><Sparkles size={20} className="animate-spin"/> {content.ai.analyzing}</>
+                ) : (
+                  <><Send size={20} /> {content.ai.submit}</>
+                )}
+              </button>
+              <button 
+                onClick={handleClear}
+                disabled={isAnalyzing || !text.trim()}
+                className={`py-4 px-8 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 transition-all ${
+                  !text.trim() 
+                  ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-transparent' 
+                  : 'border-gray-300 text-gray-600 hover:border-red-200 hover:text-red-500 hover:bg-red-50 active:scale-[0.98]'
+                }`}
+              >
+                <Trash2 size={20} /> {content.ai.clear}
+              </button>
+            </div>
+
+            {/* AI Result Box */}
+            {result && (
+              <div className="mt-8 bg-teal-50/80 border border-teal-200 rounded-3xl p-6 md:p-8  shadow-inner">
+                <div className="flex flex-col md:flex-row gap-5 items-start">
+                  <div className="w-14 h-14 bg-teal-600 text-white rounded-full flex items-center justify-center shrink-0 shadow-md">
+                    <Sparkles size={28} />
+                  </div>
+                  <div className="flex-1">
+                    <p 
+                      className="text-teal-950 text-lg font-semibold leading-relaxed mb-6" 
+                      dangerouslySetInnerHTML={{
+                        __html: ((result.desc || "").toString()).replace(/\*\*(.*?)\*\*/g, '<strong class="text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded-md border border-teal-200/50">$1</strong>')
+                      }} 
+                    />
+
+                    {/* Disclaimer Box */}
+                    <div className="bg-white/70 rounded-2xl p-4 border border-teal-100/50 flex items-start gap-3">
+                      <AlertCircle size={20} className="text-teal-600 shrink-0 mt-0.5" />
+                      <p className="text-sm text-teal-800/80 font-medium leading-relaxed">
+                        {result.disclaimer}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </FadeInSection>
+      </div>
+    </div>
+  );
+}
+
+const Steps = ({ content }) => (
+  <div id="steps" className="py-20 bg-[#16423C] text-white relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-64 h-64 bg-teal-800 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+    <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-800 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/2"></div>
+
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <FadeInSection>
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-extrabold mb-4">{content.steps.title}</h2>
+          <p className="text-teal-100 text-lg font-medium">{content.steps.subtitle}</p>
+        </div>
+      </FadeInSection>
+
+      <div className="grid md:grid-cols-3 gap-6 lg:gap-8 relative items-stretch">
+        {/* Connecting line for desktop */}
+        <div className="hidden md:block absolute top-1/2 left-[15%] right-[15%] h-[1.5px] bg-teal-700/50 -translate-y-1/2 z-0"></div>
+
+        {[
+          { num: '01', icon: <UserCheck size={28} className="text-[#3ea88f] group-hover:text-teal-600 transition-colors" />, title: content.steps.step1.title, desc: content.steps.step1.desc },
+          { num: '02', icon: <QrCode size={28} className="text-[#3ea88f] group-hover:text-teal-600 transition-colors" />, title: content.steps.step2.title, desc: content.steps.step2.desc },
+          { num: '03', icon: <CalendarClock size={28} className="text-[#3ea88f] group-hover:text-teal-600 transition-colors" />, title: content.steps.step3.title, desc: content.steps.step3.desc }
+        ].map((step, index) => (
+          <FadeInSection key={index} delay={index * 200} className="h-full">
+            <div className="group relative z-10 bg-[#1d5049] rounded-3xl p-8 border border-teal-700/30 shadow-xl hover:bg-white hover:text-teal-950 transition-all duration-500 cursor-default flex flex-col h-full hover:-translate-y-2">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-white text-teal-950 rounded-[1rem] flex items-center justify-center font-black text-xl shadow-md group-hover:bg-teal-50 transition-colors duration-300">
+                  {step.num}
+                </div>
+                {step.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-3 group-hover:text-teal-900">{step.title}</h3>
+              <p className="text-teal-100/80 leading-relaxed font-medium group-hover:text-gray-600 transition-colors mt-auto">{step.desc}</p>
+            </div>
+          </FadeInSection>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const CoachesSection = ({ lang, content, onRegister }) => {
+  const [activeTopic, setActiveTopic] = useState('all');
+
+  const filteredCoaches = activeTopic === 'all' 
+    ? coachesData 
+    : coachesData.filter(coach => coach.tags.includes(activeTopic));
+
+  return (
+    <div id="coaches" className="py-20 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <FadeInSection>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-teal-900 mb-4">{content.topicsTitle}</h2>
+            <p className="text-lg text-gray-600 mb-8">{content.topicsSubtitle}</p>
+
+            <div className="flex flex-wrap justify-center gap-3 mb-10">
+              <button 
+                onClick={() => setActiveTopic('all')}
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 active:scale-95 ${activeTopic === 'all' ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30' : 'bg-white text-gray-600 hover:bg-teal-50 hover:text-teal-700 border border-gray-200'}`}
+              >
+                {content.filterAll}
+              </button>
+              {topicsData.map(topic => (
+                <button 
+                  key={topic.id}
+                  onClick={() => setActiveTopic(topic.id)}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full font-medium transition-all duration-300 active:scale-95 border ${activeTopic === topic.id ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-500/30' : 'bg-white text-gray-700 border-gray-200 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200'}`}
+                >
+                  <span className={`${activeTopic === topic.id ? 'text-white' : 'text-teal-500'}`}>{topic.icon}</span>
+                  {topic[lang].label}
+                </button>
+              ))}
+            </div>
+            <div className="text-center text-gray-500 text-sm italic max-w-2xl mx-auto">
+              {content.note}
+            </div>
+          </div>
+        </FadeInSection>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
+          {filteredCoaches.map((coach, index) => (
+            <FadeInSection key={coach.id} delay={index * 100} className="h-full">
+              <div className="group rounded-3xl overflow-hidden bg-white shadow-lg border border-gray-100 flex flex-col transition-all duration-300 hover:shadow-2xl hover:shadow-teal-900/10 hover:-translate-y-2 h-full">
+                <div className={`${coach.bgColor} p-6 pb-8 relative overflow-hidden`}>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
+                  <div className="w-24 h-24 bg-white rounded-full mx-auto shadow-md flex items-center justify-center text-2xl font-bold text-gray-400 mb-4 border-4 border-white overflow-hidden group-hover:scale-105 transition-transform duration-300 relative z-10">
+                    <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${coach.name.en}&backgroundColor=transparent`} alt={coach.name[lang]} className="w-full h-full object-cover" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-center text-gray-900 relative z-10">{coach.name[lang]}</h3>
+                  <p className="text-center text-sm font-bold text-gray-500 mt-1 relative z-10">{coach.style}</p>
+                  <div className="mt-4 bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/80 relative z-10">
+                    <p className="text-sm text-center text-gray-800 italic font-medium">"{coach.quote[lang]}"</p>
+                  </div>
+                </div>
+
+                <div className="p-6 flex-grow flex flex-col">
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{content.coachCard.strengths}</h4>
+                    <ul className="space-y-2">
+                      {coach.strengths[lang].map((str, idx) => (
+                        <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                          <CheckCircle2 size={16} className="text-teal-500 mt-0.5 shrink-0" />
+                          <span className="font-medium">{str}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-6">
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{coach.desc[lang]}</p>
+                  </div>
+
+                  <div className="mt-auto pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm text-gray-500 flex items-center gap-1.5 font-medium"><CalendarClock size={16} className="text-gray-400"/> {coach.duration[lang]}</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-md font-bold ${coach.tagColor}`}>
+                        {topicsData.find(t => t.id === coach.tags[0])?.[lang]?.label || 'Recommended'}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => onRegister(coach.name[lang])}
+                      className="w-full py-3.5 bg-gray-900 hover:bg-teal-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-md"
+                    >
+                      {content.coachCard.btn} {coach.name[lang]}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </FadeInSection>
+          ))}
+        </div>
+
+        {filteredCoaches.length === 0 && (
+          <FadeInSection>
+            <div className="text-center py-12 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300">
+              {content.coachCard.empty}
+            </div>
+          </FadeInSection>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FAQItem = ({ faq, isOpen, onClick }) => (
+  <div className="border-b border-gray-100 last:border-0">
+    <button 
+      className="w-full text-left py-5 px-4 flex justify-between items-center focus:outline-none group hover:bg-gray-50/50 rounded-xl transition-colors"
+      onClick={onClick}
+    >
+      <span className={`font-semibold pr-4 transition-colors ${isOpen ? 'text-teal-700' : 'text-gray-900 group-hover:text-teal-600'}`}>{faq.q}</span>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isOpen ? 'bg-teal-50' : 'bg-gray-50 group-hover:bg-teal-50'}`}>
+        <ChevronDown className={`text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180 text-teal-600' : 'group-hover:text-teal-600'}`} size={18} />
+      </div>
+    </button>
+    <div className={`overflow-hidden transition-all duration-300 ease-in-out px-4 ${isOpen ? 'max-h-96 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
+      <p className="text-gray-600 leading-relaxed pt-2">{faq.a}</p>
+    </div>
+  </div>
+);
+
+const FAQSection = ({ lang, content }) => {
+  const [openIndex, setOpenIndex] = useState(0);
+
+  return (
+    <div id="faq" className="py-20 bg-white">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <FadeInSection>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-teal-900 mb-2">{content.faqTitle}</h2>
+            <p className="text-lg text-gray-600">{content.faqSubtitle}</p>
+          </div>
+        </FadeInSection>
+
+        <FadeInSection delay={100}>
+          <div className="bg-white rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 p-2 sm:p-4">
+            {faqsData.map((faq, index) => (
+              <FAQItem 
+                key={index} 
+                faq={faq[lang]} 
+                isOpen={openIndex === index} 
+                onClick={() => setOpenIndex(openIndex === index ? -1 : index)} 
+              />
+            ))}
+          </div>
+        </FadeInSection>
+      </div>
+    </div>
+  );
+};
+
+// --- MOCK DATE FORMATTER ---
+const formatDate = (date, lang) => {
+  if (!date) return '';
+  const locales = { th: 'th-TH', en: 'en-US', zh: 'zh-CN' };
+  return date.toLocaleDateString(locales[lang] || 'th-TH', { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+const RegistrationModal = ({ isOpen, onClose, preselectedCoach, content, lang }) => {
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+
+  // Schedule States
+  const [schedules, setSchedules] = useState([]);
+  const [selectedDateIndex, setSelectedDateIndex] = useState(0);
+  const [selectedTime, setSelectedTime] = useState('');
+
+  // Fetch / Generate Mock Schedules when Modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+      setIsSubmitting(false);
+      setName('');
+      setContact('');
+      setSelectedTime('');
+      setSchedules(generateMockSchedule(preselectedCoach));
+      setSelectedDateIndex(0);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; }
+  }, [isOpen, preselectedCoach]);
+
+  const handleNextStep = (e) => {
+    e.preventDefault();
+    setStep(2);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedTime) return;
+    setIsSubmitting(true);
+
+    // Simulate API Call / Sending Email
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setStep(3); // Success Screen
+    }, 2000);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/60 backdrop-blur-sm">
+      <div 
+        className={`bg-white rounded-3xl w-full shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-300 ${step === 3 ? 'max-w-md' : 'max-w-lg'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors z-10"
+        >
+          <X size={20} />
+        </button>
+
+        {step === 3 ? (
+          /* --- STEP 3: SUCCESS (EMAIL SENT SIMULATION) --- */
+          <div className="p-10 text-center animate-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 relative">
+              <Mail size={40} strokeWidth={2} className="absolute animate-pulse" />
+              <CheckCircle2 size={24} className="absolute bottom-2 right-2 bg-white rounded-full text-green-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">{content.modal.successTitle}</h3>
+            <div className="text-gray-600 mb-8 leading-relaxed">
+              <p>{content.modal.successDesc1} <strong className="text-teal-700">{content.modal.successDesc2} {preselectedCoach}</strong></p>
+              <div className="mt-4 inline-block bg-teal-50 border border-teal-100 px-6 py-4 rounded-2xl">
+                <p className="font-bold text-teal-900 mb-1 flex items-center justify-center gap-2"><CalendarDays size={18} /> {formatDate(schedules[selectedDateIndex]?.date, lang)}</p>
+                <p className="font-bold text-teal-700 text-lg flex items-center justify-center gap-2"><Clock size={18} /> {content.modal.timePrefix} {selectedTime}</p>
+              </div>
+            </div>
+            <button 
+              onClick={onClose}
+              className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-colors shadow-md active:scale-95"
+            >
+              {content.modal.closeBtn}
+            </button>
+          </div>
+        ) : (
+          <div className="p-8 md:p-10">
+            {/* Header */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{content.modal.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{content.modal.desc}</p>
+
+              {/* Progress Bar */}
+              <div className="flex gap-2 mt-6">
+                <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
+                <div className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= 2 ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
+              </div>
+              <div className="flex justify-between mt-2 text-xs font-bold text-gray-400">
+                <span className={step >= 1 ? 'text-teal-600' : ''}>{content.modal.step1}</span>
+                <span className={step >= 2 ? 'text-teal-600' : ''}>{content.modal.step2}</span>
+              </div>
+            </div>
+
+            {step === 1 && (
+              /* --- STEP 1: PERSONAL INFO --- */
+              <form onSubmit={handleNextStep} className="space-y-5 animate-in slide-in-from-right-4 duration-300">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">{content.modal.labelCoach}</label>
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      readOnly
+                      value={preselectedCoach || content.modal.unselected}
+                      className="w-full px-4 py-3.5 bg-teal-50/50 border border-teal-100 rounded-xl text-teal-900 font-bold focus:outline-none cursor-default"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-teal-600">
+                      <UserCheck size={20} />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">{content.modal.labelName}</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={content.modal.placeName}
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all placeholder-gray-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">{content.modal.labelContact}</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    placeholder={content.modal.placeContact}
+                    className="w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all placeholder-gray-400"
+                  />
+                </div>
+
+                <div className="pt-6">
+                  <button 
+                    type="submit"
+                    className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-teal-600/30 active:scale-95 flex justify-center items-center gap-2"
+                  >
+                    {content.modal.nextBtn} <ChevronRight size={18} />
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {step === 2 && (
+              /* --- STEP 2: SCHEDULE PICKER --- */
+              <form onSubmit={handleSubmit} className="animate-in slide-in-from-right-4 duration-300 flex flex-col h-full">
+
+                {/* Date Selection (Horizontal Scroll) */}
+                <div className="mb-6">
+                  <label className="block text-sm font-bold text-gray-700 mb-3">{content.modal.selectDate}</label>
+                  <div className="flex gap-3 overflow-x-auto pb-4 pt-1 snap-x scrollbar-hide -mx-2 px-2">
+                    {schedules.map((schedule, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => { setSelectedDateIndex(idx); setSelectedTime(''); }}
+                        className={`flex flex-col items-center justify-center min-w-[80px] p-3 rounded-2xl border-2 transition-all snap-start ${
+                          selectedDateIndex === idx 
+                          ? 'border-teal-500 bg-teal-50 text-teal-900 shadow-md' 
+                          : 'border-gray-100 bg-white text-gray-500 hover:border-teal-200 hover:bg-teal-50/50'
+                        }`}
+                      >
+                        <span className="text-xs font-bold uppercase mb-1">{schedule.date.toLocaleDateString(lang === 'zh' ? 'en-US' : (lang==='en'?'en-US':'th-TH'), { weekday: 'short' })}</span>
+                        <span className="text-xl font-black">{schedule.date.getDate()}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time Slots Grid */}
+                <div className="mb-8">
+                  <label className="block text-sm font-bold text-gray-700 mb-3">{content.modal.selectTime}</label>
+                  {schedules[selectedDateIndex]?.slots.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {schedules[selectedDateIndex].slots.map((time, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedTime(time)}
+                          className={`py-3 rounded-xl font-bold text-sm border-2 transition-all active:scale-95 ${
+                            selectedTime === time
+                            ? 'border-teal-600 bg-teal-600 text-white shadow-md'
+                            : 'border-gray-200 bg-white text-gray-700 hover:border-teal-300 hover:text-teal-700'
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 text-gray-500 p-4 rounded-xl text-center text-sm font-medium border border-dashed border-gray-300">
+                      {content.modal.noTimeSlots}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 mt-auto">
+                  {isSubmitting ? (
+                    <div className="w-full py-4 bg-teal-700 text-white rounded-xl font-bold flex items-center justify-center gap-3 opacity-90 cursor-not-allowed">
+                      <Sparkles size={20} className="animate-spin" /> {content.modal.sendingEmail}
+                    </div>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => setStep(1)}
+                        className="py-4 px-6 bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center"
+                      >
+                        <ArrowLeft size={18} />
+                      </button>
+                      <button 
+                        type="submit"
+                        disabled={!selectedTime}
+                        className={`flex-1 py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex justify-center items-center gap-2 ${
+                          !selectedTime ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' : 'bg-teal-600 hover:bg-teal-700 text-white shadow-teal-600/30'
+                        }`}
+                      >
+                        <Mail size={18} /> {content.modal.submitBtn}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+              </form>
+            )}
+
+            <p className="text-xs text-center text-gray-400 mt-5 flex items-center justify-center gap-1.5 font-medium">
+              <Lock size={12} /> {content.modal.privacyNote}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const Footer = ({ content }) => (
+  <footer className="bg-teal-950 text-teal-200 pt-20 pb-12 relative overflow-hidden">
+    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-500 via-transparent to-transparent"></div>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+
+      {/* 100% Strictly Confidential (Moved above SAFE TO SHARE) */}
+      <FadeInSection>
+        <div className="mb-16 max-w-3xl mx-auto flex flex-col items-center gap-3">
+          <div className="text-emerald-500/80 mb-1">
+            <Lock size={28} />
+          </div>
+          <h4 className="text-white/90 font-bold text-xl md:text-2xl tracking-wide">{content.confidential.title}</h4>
+          <p className="text-teal-500/80 text-sm md:text-base font-medium leading-relaxed max-w-2xl">
+            {content.confidential.desc}
+          </p>
+        </div>
+      </FadeInSection>
+
+      {/* SAFE TO SHARE Section */}
+      <div className="flex items-center justify-center gap-3 mb-6 hover:scale-105 transition-transform duration-500 cursor-default">
+        <ShieldCheck className="text-teal-500 w-10 h-10" />
+        <span className="font-bold text-3xl text-white tracking-tight">SAFE TO SHARE</span>
+      </div>
+      <p className="mb-8 max-w-md mx-auto text-teal-400/80 leading-relaxed text-lg">
+        {content.footer.desc}
+      </p>
+      <div className="font-bold text-teal-500 mb-12 uppercase tracking-[0.3em] text-xs">
+        CoachHub • Forward Together
+      </div>
+
+      <div className="border-t border-teal-900/80 pt-8 text-sm text-teal-600/60 font-medium">
+        &copy; 2026 Safe To Share Program. All rights reserved.
+      </div>
+    </div>
+  </footer>
+);
+
+function App() {
+  const [lang, setLang] = useState('th'); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCoach, setSelectedCoach] = useState('');
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => setScrollPosition(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const content = t[lang];
+
+  const handleRegisterClick = (coachName) => {
+    setSelectedCoach(coachName);
+    setIsModalOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen font-sans bg-gray-50 selection:bg-teal-200 selection:text-teal-900 scroll-smooth overflow-x-hidden text-gray-800">
+      <Navbar lang={lang} setLang={setLang} content={content} scrollPosition={scrollPosition} />
+      <Hero content={content} />
+      <Values content={content} />
+      <ComparisonSection content={content} />
+      <AIAssessmentSection content={content} />
+      <Steps content={content} />
+      <CoachesSection lang={lang} content={content} onRegister={handleRegisterClick} />
+      <FAQSection lang={lang} content={content} />
+      <Footer content={content} />
+
+      <RegistrationModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        preselectedCoach={selectedCoach}
+        content={content}
+        lang={lang}
+      />
+
+      {/* Back to top button */}
+      <button 
+        onClick={() => window.scrollTo({top:0, behavior:'smooth'})}
+        className={`fixed bottom-6 right-6 p-3 bg-white text-teal-600 rounded-full shadow-lg border border-teal-100 hover:bg-teal-50 hover:text-teal-700 hover:scale-110 active:scale-95 transition-all duration-300 z-40 ${scrollPosition > 500 ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}
+        aria-label="Back to top"
+      >
+        <ArrowUp size={24} />
+      </button>
+    </div>
+  );
+}
+
+        // --- END OF APP LOGIC ---
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        const AppWrapper = () => {
+            useEffect(() => {
+                 
+
+                 
+
+            }, []);
+            return <App />;
+        };
+        root.render(<AppWrapper />);
+    </script>
+</body>
+</html>
